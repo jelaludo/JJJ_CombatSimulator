@@ -2,29 +2,18 @@ import React, { useState } from 'react';
 import { Check, X, ArrowRight } from 'lucide-react';
 import CombatGauge from './CombatGauge';
 import ScenarioDisplay from './ScenarioDisplay';
+import CardSelector from './CardSelector';
 import combatScenarios from './combatScenarios';
+import { parseCardFromFilename } from './cardService';
 
 const JJJCombat = () => {
-  // Initial creature stats
-  const [creature1, setCreature1] = useState({
-    name: "Gorilla Warrior",
-    attack: 3,
-    defense: 8,
-    terrainAttack: 1,
-    terrainDefense: 1,
-    subunits: 10,
-    image: "https://via.placeholder.com/230x300/3498db/ffffff?text=Gorilla+Warrior"
-  });
+  // Default creature cards
+  const defaultCreature1 = parseCardFromFilename("Gorilla Warrior_3_8.png");
+  const defaultCreature2 = parseCardFromFilename("Thunder Bull_7_2.png");
   
-  const [creature2, setCreature2] = useState({
-    name: "Thunder Bull",
-    attack: 7,
-    defense: 2,
-    terrainAttack: 1,
-    terrainDefense: 1,
-    subunits: 10,
-    image: "https://via.placeholder.com/230x300/e74c3c/ffffff?text=Thunder+Bull"
-  });
+  // Initial creature stats
+  const [creature1, setCreature1] = useState(defaultCreature1);
+  const [creature2, setCreature2] = useState(defaultCreature2);
   
   const phases = [
     { name: "倒", description: "Takedown", bonusWinner: null, complete: false },
@@ -43,6 +32,22 @@ const JJJCombat = () => {
   const [combatComplete, setCombatComplete] = useState(false);
   const [currentScenario, setCurrentScenario] = useState(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(true);
+  
+  // Handle card selection
+  const handleSelectCard1 = (card) => {
+    setCreature1(card);
+  };
+  
+  const handleSelectCard2 = (card) => {
+    setCreature2(card);
+  };
+  
+  // Start combat after card selection
+  const startCombat = () => {
+    setSelectionMode(false);
+    resetCombat();
+  };
   
   // Calculate probability of hit
   const calculateProbability = (attacker, defender, bonus = 0) => {
@@ -249,8 +254,10 @@ const JJJCombat = () => {
   
   // Reset combat
   const resetCombat = () => {
+    // Reset creature stamina but keep the selected cards
     setCreature1(prev => ({ ...prev, subunits: 10 }));
     setCreature2(prev => ({ ...prev, subunits: 10 }));
+    
     setCombatPhases(phases);
     setCurrentPhaseIndex(0);
     setRandomNumbers([]);
@@ -263,6 +270,56 @@ const JJJCombat = () => {
     setIsAnimating(false);
   };
   
+  // Return to card selection
+  const returnToSelection = () => {
+    setSelectionMode(true);
+  };
+  
+  // Render card selection screen
+  if (selectionMode) {
+    return (
+      <div className="w-full max-w-4xl mx-auto bg-gray-100 p-4 rounded-lg">
+        <h1 className="text-2xl font-bold text-center mb-6">Jiu Jitsu Jungle Combat</h1>
+        <h2 className="text-xl text-center mb-8">Select Your Fighters</h2>
+        
+        <div className="flex justify-between mb-8">
+          <div className="w-1/2 p-4">
+            <h3 className="text-lg font-bold mb-4 text-center">Fighter 1</h3>
+            <div className="flex justify-center">
+              <CardSelector 
+                onSelectCard={handleSelectCard1} 
+                position="left"
+                selectedCard={creature1}
+              />
+            </div>
+          </div>
+          
+          <div className="w-1/2 p-4">
+            <h3 className="text-lg font-bold mb-4 text-center">Fighter 2</h3>
+            <div className="flex justify-center">
+              <CardSelector 
+                onSelectCard={handleSelectCard2} 
+                position="right"
+                selectedCard={creature2}
+              />
+            </div>
+          </div>
+        </div>
+        
+        <div className="text-center mt-8">
+          <button 
+            onClick={startCombat}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-lg"
+            disabled={!creature1 || !creature2}
+          >
+            Start Combat
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  // Render combat screen
   return (
     <div className="w-full max-w-4xl mx-auto bg-gray-100 p-4 rounded-lg">
       <h1 className="text-2xl font-bold text-center mb-4">Jiu Jitsu Jungle Combat</h1>
@@ -497,12 +554,19 @@ const JJJCombat = () => {
             </div>
           </div>
           
-          <div className="text-center">
+          <div className="text-center flex justify-center space-x-4">
             <button 
               onClick={resetCombat}
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
             >
               New Combat
+            </button>
+            
+            <button 
+              onClick={returnToSelection}
+              className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Change Fighters
             </button>
           </div>
         </div>
