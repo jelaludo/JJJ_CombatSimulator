@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { Check, X, ArrowRight } from 'lucide-react';
+import CombatGauge from './CombatGauge';
+import ScenarioDisplay from './ScenarioDisplay';
+import combatScenarios from './combatScenarios';
 
 const JJJCombat = () => {
   // Initial creature stats
@@ -38,6 +41,8 @@ const JJJCombat = () => {
   const [winner, setWinner] = useState(null);
   const [combatLog, setCombatLog] = useState([]);
   const [combatComplete, setCombatComplete] = useState(false);
+  const [currentScenario, setCurrentScenario] = useState(null);
+  const [isAnimating, setIsAnimating] = useState(false);
   
   // Calculate probability of hit
   const calculateProbability = (attacker, defender, bonus = 0) => {
@@ -65,9 +70,67 @@ const JJJCombat = () => {
     return randomNums.filter(r => r < probability).length;
   };
   
+  // Select a random scenario based on phase and outcome
+  const selectScenario = (phase, outcome, previousPhaseResult = null) => {
+    let scenarioPool = [];
+    
+    switch(phase) {
+      case 0: // Takedown
+        if (outcome === 'success') scenarioPool = combatScenarios.takedown.success;
+        else if (outcome === 'draw') scenarioPool = combatScenarios.takedown.draw;
+        else scenarioPool = combatScenarios.takedown.failure;
+        break;
+        
+      case 1: // Passing
+        if (outcome === 'success') scenarioPool = combatScenarios.passing.success;
+        else if (outcome === 'draw') scenarioPool = combatScenarios.passing.draw;
+        else scenarioPool = combatScenarios.passing.failure;
+        break;
+        
+      case 2: // Pinning
+        if (outcome === 'success') {
+          // Check if previous phase was passing
+          if (previousPhaseResult === 'success') {
+            scenarioPool = combatScenarios.pinning.successAfterPass;
+          } else {
+            scenarioPool = combatScenarios.pinning.successAfterFailedPass;
+          }
+        }
+        else if (outcome === 'draw') scenarioPool = combatScenarios.pinning.draw;
+        else scenarioPool = combatScenarios.pinning.failure;
+        break;
+        
+      case 3: // Submission
+        if (outcome === 'success') {
+          // Check if previous phase was pinning
+          if (previousPhaseResult === 'success') {
+            scenarioPool = combatScenarios.submission.successAfterPin;
+          } else {
+            scenarioPool = combatScenarios.submission.successAfterFailedPin;
+          }
+        }
+        else if (outcome === 'draw') scenarioPool = combatScenarios.submission.draw;
+        else scenarioPool = combatScenarios.submission.failure;
+        break;
+        
+      default:
+        return null;
+    }
+    
+    // Select a random scenario from the pool
+    if (scenarioPool.length > 0) {
+      const randomIndex = Math.floor(Math.random() * scenarioPool.length);
+      return scenarioPool[randomIndex];
+    }
+    
+    return null;
+  };
+  
   // Handle combat resolution for a phase
   const resolveCombatPhase = () => {
     if (currentPhaseIndex >= combatPhases.length) return;
+    
+    setIsAnimating(true);
     
     // Calculate previous bonuses
     const prevPhaseBonus = currentPhaseIndex > 0 ? 
@@ -101,6 +164,24 @@ const JJJCombat = () => {
     const damage1 = Math.round(hits2 / 6);
     const damage2 = Math.round(hits1 / 6);
     
+    // Determine outcome for scenario selection
+    let outcome = 'draw';
+    if (phaseWinner === 1) outcome = 'success';
+    else if (phaseWinner === 2) outcome = 'failure';
+    
+    // Get previous phase outcome if needed
+    let previousPhaseOutcome = null;
+    if (currentPhaseIndex > 0) {
+      const prevWinner = combatPhases[currentPhaseIndex-1].bonusWinner;
+      if (prevWinner === 1) previousPhaseOutcome = 'success';
+      else if (prevWinner === 2) previousPhaseOutcome = 'failure';
+      else previousPhaseOutcome = 'draw';
+    }
+    
+    // Select a scenario
+    const scenario = selectScenario(currentPhaseIndex, outcome, previousPhaseOutcome);
+    setCurrentScenario(scenario);
+    
     // Update combat log
     const newLog = [
       ...combatLog,
@@ -109,17 +190,22 @@ const JJJCombat = () => {
         p1, p2,
         hits1, hits2,
         phaseWinner,
-        damage1, damage2
+        damage1, damage2,
+        scenario
       }
     ];
     setCombatLog(newLog);
     
-    setShowingResults(true);
-    
-    // Check if combat is complete
-    if (currentPhaseIndex === 3) {
-      finalizeCombat(newLog);
-    }
+    // Simulate animation time
+    setTimeout(() => {
+      setIsAnimating(false);
+      setShowingResults(true);
+      
+      // Check if combat is complete
+      if (currentPhaseIndex === 3) {
+        finalizeCombat(newLog);
+      }
+    }, 2000); // 2 seconds of animation
   };
   
   // Apply final combat results
@@ -157,6 +243,7 @@ const JJJCombat = () => {
     if (currentPhaseIndex < combatPhases.length - 1) {
       setCurrentPhaseIndex(prev => prev + 1);
       setShowingResults(false);
+      setCurrentScenario(null);
     }
   };
   
@@ -172,6 +259,8 @@ const JJJCombat = () => {
     setWinner(null);
     setCombatLog([]);
     setCombatComplete(false);
+    setCurrentScenario(null);
+    setIsAnimating(false);
   };
   
   return (
@@ -183,7 +272,12 @@ const JJJCombat = () => {
         <div className="w-1/2 p-2">
           <div className="bg-white p-4 rounded-lg shadow-md">
             <h2 className="text-xl font-bold text-center">{creature1.name}</h2>
-            <img src={creature1.image} alt={creature1.name} className="mx-auto my-2 rounded" />
+            <img 
+              src={creature1.image} 
+              alt={creature1.name} 
+              className="mx-auto my-2 rounded" 
+              style={{ maxWidth: "50%" }}
+            />
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="bg-green-100 p-1 rounded">Attack: {creature1.attack}</div>
               <div className="bg-blue-100 p-1 rounded">Defense: {creature1.defense}</div>
@@ -197,7 +291,12 @@ const JJJCombat = () => {
         <div className="w-1/2 p-2">
           <div className="bg-white p-4 rounded-lg shadow-md">
             <h2 className="text-xl font-bold text-center">{creature2.name}</h2>
-            <img src={creature2.image} alt={creature2.name} className="mx-auto my-2 rounded" />
+            <img 
+              src={creature2.image} 
+              alt={creature2.name} 
+              className="mx-auto my-2 rounded" 
+              style={{ maxWidth: "50%" }}
+            />
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="bg-green-100 p-1 rounded">Attack: {creature2.attack}</div>
               <div className="bg-blue-100 p-1 rounded">Defense: {creature2.defense}</div>
@@ -251,13 +350,34 @@ const JJJCombat = () => {
             Phase: {combatPhases[currentPhaseIndex].name} ({combatPhases[currentPhaseIndex].description})
           </h2>
           
+          {/* Combat Gauge */}
+          {(isAnimating || showingResults) && (
+            <CombatGauge 
+              randomNumbers={randomNumbers}
+              probability1={combatLog[currentPhaseIndex]?.p1}
+              probability2={combatLog[currentPhaseIndex]?.p2}
+              isActive={isAnimating || showingResults}
+            />
+          )}
+          
+          {/* Scenario Display */}
+          {showingResults && currentScenario && (
+            <ScenarioDisplay 
+              scenario={currentScenario}
+              fighter1Name={creature1.name}
+              fighter2Name={creature2.name}
+              phaseWinner={combatLog[currentPhaseIndex].phaseWinner}
+            />
+          )}
+          
           {!showingResults ? (
             <div className="text-center">
               <button 
                 onClick={resolveCombatPhase}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                disabled={isAnimating}
               >
-                Resolve Combat
+                {isAnimating ? "Resolving..." : "Resolve Combat"}
               </button>
             </div>
           ) : (
@@ -412,6 +532,7 @@ const JJJCombat = () => {
                   entry.phaseWinner === 2 ? 
                   `${creature2.name} wins` : 
                   'Draw'}
+                {entry.scenario && ` - ${entry.scenario.name}: ${entry.scenario.description}`}
               </div>
             </div>
           ))}
