@@ -3,7 +3,8 @@ import React from 'react';
 const ScenarioDisplay = ({ scenario, fighter1Name, fighter2Name, phaseWinner }) => {
   if (!scenario) return null;
   
-  // Determine which fighter to mention in the description
+  // Get the winner and loser names
+  const winnerName = phaseWinner === 1 ? fighter1Name : fighter2Name;
   const loserName = phaseWinner === 1 ? fighter2Name : fighter1Name;
   
   return (
@@ -19,11 +20,7 @@ const ScenarioDisplay = ({ scenario, fighter1Name, fighter2Name, phaseWinner }) 
       </p>
       
       <div className="mt-3 text-center font-bold">
-        {phaseWinner === 1 ? (
-          <span className="text-blue-600">{fighter1Name} executes a perfect {scenario.name}!</span>
-        ) : (
-          <span className="text-red-600">{fighter2Name} executes a perfect {scenario.name}!</span>
-        )}
+        <span className="text-blue-600">{winnerName} executes a perfect {scenario.name}!</span>
       </div>
     </div>
   );

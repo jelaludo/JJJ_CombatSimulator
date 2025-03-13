@@ -57,14 +57,43 @@ const CombatGauge = ({ randomNumbers, probability1, probability2, isActive }) =>
       return () => clearInterval(interval);
     }
   }, [animationFrames, randomNumbers, probability1, probability2]);
+
+  // Calculate color intensities based on gauge position
+  const getGaugeColors = () => {
+    const intensity1 = Math.min(1, Math.max(0, (gaugePosition - 50) / 30)); // 0 to 1 for fighter 1
+    const intensity2 = Math.min(1, Math.max(0, (50 - gaugePosition) / 30)); // 0 to 1 for fighter 2
+    
+    return {
+      fighter1: gaugePosition >= 50 
+        ? `rgb(${Math.round(220 - 120 * intensity1)}, ${Math.round(220)}, ${Math.round(220 - 120 * intensity1)})` // Green gradient
+        : `rgb(${Math.round(220)}, ${Math.round(220 - 120 * (1 - intensity1))}, ${Math.round(220 - 120 * (1 - intensity1))})`, // Red gradient
+      fighter2: gaugePosition <= 50
+        ? `rgb(${Math.round(220 - 120 * intensity2)}, ${Math.round(220)}, ${Math.round(220 - 120 * intensity2)})` // Green gradient
+        : `rgb(${Math.round(220)}, ${Math.round(220 - 120 * (1 - intensity2))}, ${Math.round(220 - 120 * (1 - intensity2))})` // Red gradient
+    };
+  };
+
+  const gaugeColors = getGaugeColors();
   
   return (
     <div className="w-full mb-4">
       <div className="relative h-8 bg-gray-200 rounded-full overflow-hidden">
         {/* Fighter 1 side */}
         <div 
-          className="absolute top-0 left-0 h-full bg-blue-500 transition-all duration-300 ease-in-out"
-          style={{ width: `${gaugePosition}%` }}
+          className="absolute top-0 left-0 h-full transition-all duration-300 ease-in-out"
+          style={{ 
+            width: `${gaugePosition}%`,
+            backgroundColor: gaugeColors.fighter1
+          }}
+        ></div>
+        
+        {/* Fighter 2 side */}
+        <div 
+          className="absolute top-0 right-0 h-full transition-all duration-300 ease-in-out"
+          style={{ 
+            width: `${100 - gaugePosition}%`,
+            backgroundColor: gaugeColors.fighter2
+          }}
         ></div>
         
         {/* Center line */}
@@ -78,8 +107,8 @@ const CombatGauge = ({ randomNumbers, probability1, probability2, isActive }) =>
         
         {/* Labels */}
         <div className="absolute top-0 left-0 w-full h-full flex items-center justify-between px-2">
-          <span className="text-xs font-bold text-white z-10">Fighter 1</span>
-          <span className="text-xs font-bold text-white z-10">Fighter 2</span>
+          <span className="text-xs font-bold text-white z-10 drop-shadow-md">Fighter 1</span>
+          <span className="text-xs font-bold text-white z-10 drop-shadow-md">Fighter 2</span>
         </div>
       </div>
       

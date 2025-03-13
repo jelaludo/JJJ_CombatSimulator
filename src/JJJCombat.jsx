@@ -8,8 +8,8 @@ import { parseCardFromFilename } from './cardService';
 
 const JJJCombat = () => {
   // Default creature cards
-  const defaultCreature1 = parseCardFromFilename("Gorilla Warrior_3_8.png");
-  const defaultCreature2 = parseCardFromFilename("Thunder Bull_7_2.png");
+  const defaultCreature1 = parseCardFromFilename("Baby Swallow_1_4.png");
+  const defaultCreature2 = parseCardFromFilename("POW Tiger_8_7.png");
   
   // Initial creature stats
   const [creature1, setCreature1] = useState(defaultCreature1);
@@ -76,46 +76,62 @@ const JJJCombat = () => {
   };
   
   // Select a random scenario based on phase and outcome
-  const selectScenario = (phase, outcome, previousPhaseResult = null) => {
+  const selectScenario = (phase, outcome) => {
     let scenarioPool = [];
+    const phaseWinner = combatPhases[phase].bonusWinner;
     
+    // Determine the scenario pool based on the current phase
     switch(phase) {
-      case 0: // Takedown
-        if (outcome === 'success') scenarioPool = combatScenarios.takedown.success;
-        else if (outcome === 'draw') scenarioPool = combatScenarios.takedown.draw;
-        else scenarioPool = combatScenarios.takedown.failure;
+      case 0: // PHASE 1: Takedown
+        if (phaseWinner !== 0) {
+          scenarioPool = combatScenarios.takedown.success;
+        } else if (outcome === 'draw') {
+          scenarioPool = combatScenarios.takedown.draw;
+        } else {
+          scenarioPool = combatScenarios.takedown.failure;
+        }
         break;
         
-      case 1: // Passing
-        if (outcome === 'success') scenarioPool = combatScenarios.passing.success;
-        else if (outcome === 'draw') scenarioPool = combatScenarios.passing.draw;
-        else scenarioPool = combatScenarios.passing.failure;
+      case 1: // PHASE 2: Guard Passing
+        if (phaseWinner !== 0) {
+          scenarioPool = combatScenarios.passing.success;
+        } else if (outcome === 'draw') {
+          scenarioPool = combatScenarios.passing.draw;
+        } else {
+          scenarioPool = combatScenarios.passing.failure;
+        }
         break;
         
-      case 2: // Pinning
-        if (outcome === 'success') {
-          // Check if previous phase was passing
-          if (previousPhaseResult === 'success') {
+      case 2: // PHASE 3: Pinning
+        if (phaseWinner !== 0) {
+          // Check if previous phase winner matches current phase winner
+          const prevPhaseWinner = combatPhases[phase-1].bonusWinner;
+          if (prevPhaseWinner === phaseWinner) {
             scenarioPool = combatScenarios.pinning.successAfterPass;
           } else {
             scenarioPool = combatScenarios.pinning.successAfterFailedPass;
           }
+        } else if (outcome === 'draw') {
+          scenarioPool = combatScenarios.pinning.draw;
+        } else {
+          scenarioPool = combatScenarios.pinning.failure;
         }
-        else if (outcome === 'draw') scenarioPool = combatScenarios.pinning.draw;
-        else scenarioPool = combatScenarios.pinning.failure;
         break;
         
-      case 3: // Submission
-        if (outcome === 'success') {
-          // Check if previous phase was pinning
-          if (previousPhaseResult === 'success') {
+      case 3: // PHASE 4: Submission
+        if (phaseWinner !== 0) {
+          // Check if previous phase winner matches current phase winner
+          const prevPhaseWinner = combatPhases[phase-1].bonusWinner;
+          if (prevPhaseWinner === phaseWinner) {
             scenarioPool = combatScenarios.submission.successAfterPin;
           } else {
             scenarioPool = combatScenarios.submission.successAfterFailedPin;
           }
+        } else if (outcome === 'draw') {
+          scenarioPool = combatScenarios.submission.draw;
+        } else {
+          scenarioPool = combatScenarios.submission.failure;
         }
-        else if (outcome === 'draw') scenarioPool = combatScenarios.submission.draw;
-        else scenarioPool = combatScenarios.submission.failure;
         break;
         
       default:
@@ -123,9 +139,16 @@ const JJJCombat = () => {
     }
     
     // Select a random scenario from the pool
-    if (scenarioPool.length > 0) {
+    if (scenarioPool && scenarioPool.length > 0) {
       const randomIndex = Math.floor(Math.random() * scenarioPool.length);
-      return scenarioPool[randomIndex];
+      const selectedScenario = scenarioPool[randomIndex];
+      
+      // Add phase information to help with debugging
+      return {
+        ...selectedScenario,
+        phaseType: ['Takedown', 'Passing', 'Pinning', 'Submission'][phase],
+        phaseIndex: phase
+      };
     }
     
     return null;
@@ -169,22 +192,8 @@ const JJJCombat = () => {
     const damage1 = Math.round(hits2 / 6);
     const damage2 = Math.round(hits1 / 6);
     
-    // Determine outcome for scenario selection
-    let outcome = 'draw';
-    if (phaseWinner === 1) outcome = 'success';
-    else if (phaseWinner === 2) outcome = 'failure';
-    
-    // Get previous phase outcome if needed
-    let previousPhaseOutcome = null;
-    if (currentPhaseIndex > 0) {
-      const prevWinner = combatPhases[currentPhaseIndex-1].bonusWinner;
-      if (prevWinner === 1) previousPhaseOutcome = 'success';
-      else if (prevWinner === 2) previousPhaseOutcome = 'failure';
-      else previousPhaseOutcome = 'draw';
-    }
-    
-    // Select a scenario
-    const scenario = selectScenario(currentPhaseIndex, outcome, previousPhaseOutcome);
+    // Select a scenario based on the current phase and outcome
+    const scenario = selectScenario(currentPhaseIndex, phaseWinner === 0 ? 'draw' : 'success');
     setCurrentScenario(scenario);
     
     // Update combat log
@@ -243,12 +252,19 @@ const JJJCombat = () => {
     setCombatComplete(true);
   };
   
-  // Move to next phase
+  // Move to next phase and automatically resolve it
   const nextPhase = () => {
     if (currentPhaseIndex < combatPhases.length - 1) {
+      // Move to the next phase
       setCurrentPhaseIndex(prev => prev + 1);
       setShowingResults(false);
       setCurrentScenario(null);
+      
+      // Use setTimeout to allow the UI to update before resolving the next phase
+      setTimeout(() => {
+        // Automatically resolve the next phase
+        resolveCombatPhase();
+      }, 500);
     }
   };
   
@@ -329,12 +345,15 @@ const JJJCombat = () => {
         <div className="w-1/2 p-2">
           <div className="bg-white p-4 rounded-lg shadow-md">
             <h2 className="text-xl font-bold text-center">{creature1.name}</h2>
-            <img 
-              src={creature1.image} 
-              alt={creature1.name} 
-              className="mx-auto my-2 rounded" 
-              style={{ maxWidth: "50%" }}
-            />
+            <div className="flex justify-center">
+              <div className="w-1/2">
+                <img 
+                  src={creature1.image} 
+                  alt={creature1.name} 
+                  className="w-full h-auto rounded-lg" 
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="bg-green-100 p-1 rounded">Attack: {creature1.attack}</div>
               <div className="bg-blue-100 p-1 rounded">Defense: {creature1.defense}</div>
@@ -348,12 +367,15 @@ const JJJCombat = () => {
         <div className="w-1/2 p-2">
           <div className="bg-white p-4 rounded-lg shadow-md">
             <h2 className="text-xl font-bold text-center">{creature2.name}</h2>
-            <img 
-              src={creature2.image} 
-              alt={creature2.name} 
-              className="mx-auto my-2 rounded" 
-              style={{ maxWidth: "50%" }}
-            />
+            <div className="flex justify-center">
+              <div className="w-1/2">
+                <img 
+                  src={creature2.image} 
+                  alt={creature2.name} 
+                  className="w-full h-auto rounded-lg" 
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="bg-green-100 p-1 rounded">Attack: {creature2.attack}</div>
               <div className="bg-blue-100 p-1 rounded">Defense: {creature2.defense}</div>
@@ -577,29 +599,48 @@ const JJJCombat = () => {
         <h2 className="text-xl font-bold mb-2">Combat Log</h2>
         
         <div className="text-sm">
-          {combatLog.map((entry, index) => (
-            <div key={index} className="mb-2 p-2 border-b">
-              <div className="font-bold">
-                Phase {index+1}: {combatPhases[index].name} ({combatPhases[index].description})
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  {creature1.name}: {entry.hits1} hits (p={entry.p1.toFixed(2)})
+          {combatLog.map((entry, index) => {
+            // Get the correct phase name for this entry
+            const phaseNames = ["Takedown", "Passing", "Pinning", "Submission"];
+            const phaseName = phaseNames[entry.phase];
+            
+            // Get the winner name
+            const winnerName = entry.phaseWinner === 1 ? creature1.name : 
+                              entry.phaseWinner === 2 ? creature2.name : "No one";
+            
+            // Get the loser name
+            const loserName = entry.phaseWinner === 1 ? creature2.name : 
+                             entry.phaseWinner === 2 ? creature1.name : "No one";
+            
+            return (
+              <div key={index} className="mb-2 p-2 border-b">
+                <div className="font-bold">
+                  Phase {index+1}: {combatPhases[index].name} ({combatPhases[index].description})
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    {creature1.name}: {entry.hits1} hits (p={entry.p1.toFixed(2)})
+                  </div>
+                  <div>
+                    {creature2.name}: {entry.hits2} hits (p={entry.p2.toFixed(2)})
+                  </div>
                 </div>
                 <div>
-                  {creature2.name}: {entry.hits2} hits (p={entry.p2.toFixed(2)})
+                  Result: {entry.phaseWinner === 1 ? 
+                    `${creature1.name} wins` : 
+                    entry.phaseWinner === 2 ? 
+                    `${creature2.name} wins` : 
+                    'Draw'}
+                  {entry.scenario && (
+                    <div className="mt-1 pl-4 border-l-2 border-blue-300">
+                      <div className="font-semibold">{phaseName} Phase:</div>
+                      <div>{winnerName} executes {entry.scenario.name}: {entry.scenario.description.replace('the opponent', loserName)}</div>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div>
-                Result: {entry.phaseWinner === 1 ? 
-                  `${creature1.name} wins` : 
-                  entry.phaseWinner === 2 ? 
-                  `${creature2.name} wins` : 
-                  'Draw'}
-                {entry.scenario && ` - ${entry.scenario.name}: ${entry.scenario.description}`}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
