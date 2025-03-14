@@ -9,7 +9,9 @@
 export const loadCards = async () => {
   try {
     // List of actual cards that exist in the JJJCombatSimAssets folder
+    // IMPORTANT: This list needs to be manually updated when new character files are added to the public/JJJCombatSimAssets folder
     const actualCardFiles = [
+      // Original characters
       "Baby Swallow_1_4.png",
       "Balanced Capybara_6_7.png",
       "Fierce Swallow_2_9.png",
@@ -23,7 +25,15 @@ export const loadCards = async () => {
       "Gorilla Mech_10_5.png",
       "Gorilla Mech Baby_4_3.png",
       "Cyber Kid_6_1_.png",
-      "Cyber Brown_6_5.png"
+      "Cyber Brown_6_5.png",
+      
+      // New characters
+      "Unicorn Baby_4_5_.png",
+      "Mattari Zaru_2_3.png",
+      "Tadanaru Penguin_7_9.png",
+      "White Belt Penguin_2_2.png",
+      "Onsen Baby Zaru_2_2.png",
+      "Unicorn_8_7.png"
     ];
     
     // Parse the card data from the filenames

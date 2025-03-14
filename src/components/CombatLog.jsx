@@ -7,9 +7,18 @@ import React from 'react';
  * @param {Array} props.combatPhases - Array of combat phases
  * @param {Object} props.creature1 - Fighter 1 data
  * @param {Object} props.creature2 - Fighter 2 data
+ * @param {Object} props.currentScenario - Current scenario being displayed
+ * @param {boolean} props.showingResults - Whether results are being shown
  * @returns {JSX.Element} - Rendered component
  */
-const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
+const CombatLog = ({ 
+  combatLog, 
+  combatPhases, 
+  creature1, 
+  creature2, 
+  currentScenario,
+  showingResults
+}) => {
   if (!combatLog || combatLog.length === 0) {
     return null;
   }
@@ -51,6 +60,30 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
       return "REVERSAL!";
     } else {
       return "Dominance!";
+    }
+  };
+
+  // Get descriptive message for phase winner
+  const getWinnerMessage = (entry, phaseIndex) => {
+    if (entry.phaseWinner === 0) {
+      return "Both fighters are locked in a scramble with no clear advantage!";
+    }
+    
+    const winnerName = getWinnerName(entry);
+    const loserName = entry.phaseWinner === 1 ? creature2.name : creature1.name;
+    
+    // Different messages based on phase
+    switch(phaseIndex) {
+      case 0: // Takedown
+        return `${winnerName} has taken ${loserName} to the ground with superior technique!`;
+      case 1: // Passing
+        return `${winnerName} has skillfully passed ${loserName}'s guard and gained position!`;
+      case 2: // Pinning
+        return `${winnerName} has established dominant control over ${loserName}!`;
+      case 3: // Submission
+        return `${winnerName} has emerged victorious after an intense battle!`;
+      default:
+        return `${winnerName} wins this phase!`;
     }
   };
 
@@ -105,7 +138,7 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
         </div>
         {entry.phaseWinner !== 0 ? (
           <div className="mt-2 text-green-600 text-sm">
-            {getWinnerName(entry)} wins this phase!
+            {getWinnerMessage(entry, phaseIndex)}
             {entry.bonusValue && (
               <span className="text-blue-500 ml-2">
                 (+{entry.bonusValue})
@@ -122,9 +155,16 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
             )}
           </div>
         )}
+        {/* Display scenario description in green text for more flavor */}
+        {entry.scenario && entry.scenario.description && (
+          <div className="mt-2 text-green-500 text-sm italic">
+            "{entry.scenario.description}"
+          </div>
+        )}
         {entry.isInjured && (
           <div className="mt-2 text-red-600 text-sm">
-            {entry.injuredFighter === 1 ? creature1.name : creature2.name} was injured!
+            {entry.injuredFighter === 1 ? creature1.name : creature2.name} suffered 
+            {entry.injuryType === 'broken' ? ' a broken bone' : ' an injury'} during the submission!
             <div className="text-xs">
               (Chance: {(entry.injuryChance * 100).toFixed(1)}%)
             </div>
@@ -134,8 +174,71 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
     );
   };
 
+  // Check if combat is complete (all phases have entries)
+  const isCombatComplete = [0, 1, 2, 3].every(phaseIndex => phaseEntries[phaseIndex]);
+  
+  // Get the final winner if combat is complete
+  const getFinalWinner = () => {
+    if (!isCombatComplete) return null;
+    
+    // Check if the final phase is a draw
+    const finalPhaseEntry = phaseEntries[3];
+    if (finalPhaseEntry && finalPhaseEntry.phaseWinner === 0) {
+      return 0; // Draw
+    }
+    
+    // IMPORTANT: If the final phase (Submission) has a clear winner, they win the match
+    // This ensures that a reversal in the final phase determines the winner
+    if (finalPhaseEntry && finalPhaseEntry.phaseWinner !== 0) {
+      return finalPhaseEntry.phaseWinner;
+    }
+    
+    // If we reach here, it means the final phase doesn't have a clear winner
+    // Count wins for each fighter
+    const wins1 = sortedLog.filter(entry => entry.phaseWinner === 1).length;
+    const wins2 = sortedLog.filter(entry => entry.phaseWinner === 2).length;
+    
+    // In case of a tie, check previous phases in reverse order
+    if (wins1 === wins2) {
+      const phase2Entry = phaseEntries[2];
+      if (phase2Entry && phase2Entry.phaseWinner !== 0) {
+        return phase2Entry.phaseWinner;
+      } else {
+        const phase1Entry = phaseEntries[1];
+        if (phase1Entry && phase1Entry.phaseWinner !== 0) {
+          return phase1Entry.phaseWinner;
+        } else {
+          const phase0Entry = phaseEntries[0];
+          if (phase0Entry && phase0Entry.phaseWinner !== 0) {
+            return phase0Entry.phaseWinner;
+          }
+        }
+      }
+      // If all phases are draws, return draw
+      return 0;
+    }
+    
+    // If not tied, the fighter with more wins is the overall winner
+    return wins1 > wins2 ? 1 : 2;
+  };
+  
+  const finalWinner = getFinalWinner();
+
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
+      {/* Final result display when combat is complete */}
+      {isCombatComplete && (
+        <div className="mb-4 p-4 bg-gray-100 rounded-lg text-center">
+          {finalWinner === 0 ? (
+            <h3 className="text-xl font-bold text-purple-600">Match Ends in a Draw!</h3>
+          ) : (
+            <h3 className="text-xl font-bold text-green-600">
+              {finalWinner === 1 ? creature1.name : creature2.name} Wins the Match!
+            </h3>
+          )}
+        </div>
+      )}
+      
       <h3 className="text-xl font-bold mb-4">Combat Log</h3>
       <div className="grid grid-cols-2 gap-4">
         {/* Phase 1: Takedown */}
