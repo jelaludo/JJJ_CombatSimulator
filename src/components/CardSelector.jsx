@@ -74,13 +74,21 @@ const CardSelector = ({ onSelectCard, position, selectedCard }) => {
       
       {/* Card selection tooltip */}
       {showTooltip && (
-        <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg z-50 p-2 border border-gray-200">
-          <div className="text-sm font-bold mb-2 pb-1 border-b">Select a Fighter</div>
+        <div className="fixed inset-0 sm:absolute sm:inset-auto sm:top-full sm:left-0 sm:mt-2 bg-white sm:rounded-lg shadow-lg z-50 p-2 sm:p-4 border border-gray-200 overflow-auto">
+          <div className="text-sm font-bold mb-2 pb-1 border-b flex justify-between items-center">
+            <span>Select a Fighter</span>
+            <button 
+              className="sm:hidden text-gray-500 hover:text-gray-700"
+              onClick={() => setShowTooltip(false)}
+            >
+              ✕
+            </button>
+          </div>
           
           {loading ? (
             <div className="text-center p-4 text-gray-500">Loading cards...</div>
           ) : (
-            <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-[80vh] sm:max-h-60 overflow-y-auto">
               {cards.map(card => (
                 <div 
                   key={card.id}
@@ -126,7 +134,7 @@ const CardSelector = ({ onSelectCard, position, selectedCard }) => {
           )}
           
           <button 
-            className="mt-2 w-full py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm"
+            className="mt-2 w-full py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm sm:block hidden"
             onClick={() => setShowTooltip(false)}
           >
             Close

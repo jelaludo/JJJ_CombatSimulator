@@ -9,27 +9,21 @@ import React from 'react';
  * @returns {JSX.Element} - Rendered component
  */
 const PhaseKanji = ({ kanji, description, status }) => {
-  // Determine text color based on status
-  const getTextColor = () => {
+  const getTextColor = (status) => {
     switch (status) {
       case 'active':
         return 'text-green-600';
       case 'complete':
         return 'text-black';
-      case 'pending':
       default:
         return 'text-gray-400';
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div className={`text-5xl font-bold ${getTextColor()}`}>
-        {kanji}
-      </div>
-      <div className={`text-xs mt-1 ${getTextColor()}`}>
-        {description}
-      </div>
+    <div className={`flex flex-col items-center ${getTextColor(status)}`}>
+      <div className="text-2xl sm:text-3xl font-bold mb-1">{kanji}</div>
+      <div className="text-xs sm:text-sm whitespace-nowrap">{description}</div>
     </div>
   );
 };

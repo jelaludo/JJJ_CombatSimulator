@@ -418,41 +418,205 @@ const JJJCombat = () => {
   // Render fighter selection screen
   if (selectionMode) {
     return (
-      <div className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold text-center mb-6">JJJ Combat Simulator</h1>
-        
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-bold mb-4">Select Your Fighters</h2>
+      <div className="w-full min-h-screen bg-gray-100">
+        <div className="w-full p-4">
+          <h1 className="text-3xl font-bold text-center mb-6">JJJ Combat Simulator</h1>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <CardSelector 
-                onSelectCard={handleSelectCard1} 
-                position="left" 
-                selectedCard={creature1} 
-              />
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-bold mb-4">Select Your Fighters</h2>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="col-span-1">
+                <CardSelector 
+                  onSelectCard={handleSelectCard1} 
+                  position="left" 
+                  selectedCard={creature1} 
+                />
+              </div>
+              
+              <div className="col-span-1">
+                <CardSelector 
+                  onSelectCard={handleSelectCard2} 
+                  position="right" 
+                  selectedCard={creature2} 
+                />
+              </div>
             </div>
             
-            <div>
-              <CardSelector 
-                onSelectCard={handleSelectCard2} 
-                position="right" 
-                selectedCard={creature2} 
+            {/* Combat Speed Control */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <h3 className="text-lg font-bold mb-2">Combat Speed</h3>
+              <div className="flex items-center justify-between">
+                <label htmlFor="speed-control-selection" className="font-bold text-gray-700">Speed:</label>
+                <div className="text-sm font-medium text-gray-500">
+                  {combatSpeed === 0.5 ? 'Slow' : combatSpeed === 1 ? 'Normal' : combatSpeed === 2 ? 'Fast' : 'Very Fast'}
+                </div>
+              </div>
+              <input 
+                id="speed-control-selection"
+                type="range" 
+                min="0.5" 
+                max="3" 
+                step="0.5" 
+                value={combatSpeed} 
+                onChange={handleSpeedChange}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2"
               />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>Slow</span>
+                <span>Normal</span>
+                <span>Fast</span>
+                <span>Very Fast</span>
+              </div>
+            </div>
+            
+            <div className="mt-6 text-center">
+              <button
+                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-bold transition-colors"
+                onClick={startCombat}
+              >
+                Start Combat
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Render combat screen
+  return (
+    <div className="w-full min-h-screen bg-gray-100">
+      <div className="w-full p-2 sm:p-4">
+        <h1 className="text-3xl font-bold text-center mb-4 sm:mb-6">JJJ Combat Simulator</h1>
+        
+        {/* Combat area */}
+        <div className="bg-white p-2 sm:p-6 rounded-lg shadow-md mb-4 sm:mb-6">
+          {/* Fighters */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-8 mb-4 sm:mb-6">
+            {/* Fighter 1 */}
+            <div className="text-center">
+              <div className="relative">
+                {winner === 1 && (
+                  <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-full">
+                    <img 
+                      src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_Crown.png`} 
+                      alt="Winner Crown" 
+                      className="w-16 sm:w-24 h-16 sm:h-24"
+                    />
+                  </div>
+                )}
+                {injuredFighter === 1 && (
+                  <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-full">
+                    <img 
+                      src={`${process.env.PUBLIC_URL}/icons/${injuryType === 'broken' ? 'JJJ_Icon_BrokenBone.png' : 'JJJ_Icon_Injury.png'}`} 
+                      alt={injuryType === 'broken' ? "Broken Bone" : "Injury"} 
+                      className="w-16 sm:w-24 h-16 sm:h-24"
+                    />
+                  </div>
+                )}
+                <div className="relative">
+                  <FighterCard 
+                    fighter={creature1} 
+                    size={1}
+                    isWinner={winner === 1}
+                    showStats={false}
+                  />
+                </div>
+                {!combatComplete && hits.length > 0 && (
+                  <div className="mt-2 font-bold text-sm sm:text-base">
+                    Hits: {hits[0]}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Draw icon (displayed between fighters when there's a draw) */}
+            {winner === 0 && combatComplete && (
+              <div className="absolute left-1/2 top-1/3 transform -translate-x-1/2 -translate-y-1/2 z-10">
+                <img 
+                  src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_FistBump.png`} 
+                  alt="Draw - Fist Bump" 
+                  className="w-16 sm:w-24 h-16 sm:h-24"
+                />
+              </div>
+            )}
+            
+            {/* Fighter 2 */}
+            <div className="text-center">
+              <div className="relative">
+                {winner === 2 && (
+                  <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-full">
+                    <img 
+                      src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_Crown.png`} 
+                      alt="Winner Crown" 
+                      className="w-16 sm:w-24 h-16 sm:h-24"
+                    />
+                  </div>
+                )}
+                {injuredFighter === 2 && (
+                  <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-full">
+                    <img 
+                      src={`${process.env.PUBLIC_URL}/icons/${injuryType === 'broken' ? 'JJJ_Icon_BrokenBone.png' : 'JJJ_Icon_Injury.png'}`} 
+                      alt={injuryType === 'broken' ? "Broken Bone" : "Injury"} 
+                      className="w-16 sm:w-24 h-16 sm:h-24"
+                    />
+                  </div>
+                )}
+                <div className="relative">
+                  <FighterCard 
+                    fighter={creature2} 
+                    size={1}
+                    isWinner={winner === 2}
+                    showStats={false}
+                  />
+                </div>
+                {!combatComplete && hits.length > 0 && (
+                  <div className="mt-2 font-bold text-sm sm:text-base">
+                    Hits: {hits[1]}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
+          {/* Combat gauge - Always visible */}
+          <div className="mb-4">
+            <CombatGauge 
+              randomNumbers={randomNumbers}
+              probability1={combatLog.length > 0 ? combatLog[combatLog.length - 1].p1 : 0.5}
+              probability2={combatLog.length > 0 ? combatLog[combatLog.length - 1].p2 : 0.5}
+              isActive={isAnimating && !combatComplete}
+              fighter1Name={creature1.name}
+              fighter2Name={creature2.name}
+            />
+          </div>
+          
+          {/* Combat log with vertical layout */}
+          {combatLog.length > 0 && (
+            <div className="mb-4 w-full">
+              <CombatLog 
+                combatLog={combatLog}
+                combatPhases={combatPhases}
+                creature1={creature1}
+                creature2={creature2}
+                currentScenario={currentScenario}
+                showingResults={showingResults}
+                currentPhaseIndex={currentPhaseIndex}
+              />
+            </div>
+          )}
+          
           {/* Combat Speed Control */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-lg font-bold mb-2">Combat Speed</h3>
+          <div className="mb-4 p-3 border-t border-gray-200 pt-4">
             <div className="flex items-center justify-between">
-              <label htmlFor="speed-control-selection" className="font-bold text-gray-700">Speed:</label>
+              <label htmlFor="speed-control" className="font-bold text-gray-700">Combat Speed:</label>
               <div className="text-sm font-medium text-gray-500">
                 {combatSpeed === 0.5 ? 'Slow' : combatSpeed === 1 ? 'Normal' : combatSpeed === 2 ? 'Fast' : 'Very Fast'}
               </div>
             </div>
             <input 
-              id="speed-control-selection"
+              id="speed-control"
               type="range" 
               min="0.5" 
               max="3" 
@@ -469,183 +633,12 @@ const JJJCombat = () => {
             </div>
           </div>
           
-          <div className="mt-6 text-center">
-            <button
-              className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-bold transition-colors"
-              onClick={startCombat}
-            >
-              Start Combat
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Render combat screen
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center mb-6">JJJ Combat Simulator</h1>
-      
-      {/* Combat area */}
-      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-6">
-        {/* Fighters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-6">
-          {/* Fighter 1 */}
-          <div className="text-center">
-            <div className="relative">
-              {winner === 1 && (
-                <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-full">
-                  <img 
-                    src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_Crown.png`} 
-                    alt="Winner Crown" 
-                    className="w-24 h-24"
-                  />
-                </div>
-              )}
-              {injuredFighter === 1 && (
-                <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-full">
-                  <img 
-                    src={`${process.env.PUBLIC_URL}/icons/${injuryType === 'broken' ? 'JJJ_Icon_BrokenBone.png' : 'JJJ_Icon_Injury.png'}`} 
-                    alt={injuryType === 'broken' ? "Broken Bone" : "Injury"} 
-                    className="w-24 h-24"
-                  />
-                </div>
-              )}
-              <div className="relative">
-                <FighterCard 
-                  fighter={creature1} 
-                  size={1}
-                  isWinner={winner === 1}
-                  showStats={false}
-                />
-              </div>
-              {!combatComplete && hits.length > 0 && (
-                <div className="mt-2 font-bold">
-                  Hits: {hits[0]}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Draw icon (displayed between fighters when there's a draw) */}
-          {winner === 0 && combatComplete && (
-            <div className="absolute left-1/2 top-1/3 transform -translate-x-1/2 -translate-y-1/2 z-10 flex items-center justify-center sm:hidden">
-              <img 
-                src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_FistBump.png`} 
-                alt="Draw - Fist Bump" 
-                style={{ width: '96px', height: 'auto', display: 'block' }}
-              />
-            </div>
-          )}
-          
-          {/* Fighter 2 */}
-          <div className="text-center">
-            <div className="relative">
-              {winner === 2 && (
-                <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-full">
-                  <img 
-                    src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_Crown.png`} 
-                    alt="Winner Crown" 
-                    className="w-24 h-24"
-                  />
-                </div>
-              )}
-              {injuredFighter === 2 && (
-                <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-full">
-                  <img 
-                    src={`${process.env.PUBLIC_URL}/icons/${injuryType === 'broken' ? 'JJJ_Icon_BrokenBone.png' : 'JJJ_Icon_Injury.png'}`} 
-                    alt={injuryType === 'broken' ? "Broken Bone" : "Injury"} 
-                    className="w-24 h-24"
-                  />
-                </div>
-              )}
-              <div className="relative">
-                <FighterCard 
-                  fighter={creature2} 
-                  size={1}
-                  isWinner={winner === 2}
-                  showStats={false}
-                />
-              </div>
-              {!combatComplete && hits.length > 0 && (
-                <div className="mt-2 font-bold">
-                  Hits: {hits[1]}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Draw icon for desktop (centered between fighters) */}
-          {winner === 0 && combatComplete && (
-            <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 hidden sm:flex items-center justify-center">
-              <img 
-                src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_FistBump.png`} 
-                alt="Draw - Fist Bump" 
-                style={{ width: '96px', height: 'auto', display: 'block' }}
-              />
-            </div>
-          )}
-        </div>
-        
-        {/* Combat gauge - Always visible */}
-        <div className="mb-4">
-          <CombatGauge 
-            randomNumbers={randomNumbers}
-            probability1={combatLog.length > 0 ? combatLog[combatLog.length - 1].p1 : 0.5}
-            probability2={combatLog.length > 0 ? combatLog[combatLog.length - 1].p2 : 0.5}
-            isActive={isAnimating && !combatComplete}
-            fighter1Name={creature1.name}
-            fighter2Name={creature2.name}
+          {/* Combat controls */}
+          <CombatControls 
+            onReturn={returnToSelection}
+            combatComplete={combatComplete}
           />
         </div>
-        
-        {/* Combat log with vertical layout */}
-        {combatLog.length > 0 && (
-          <div className="mb-4">
-            <CombatLog 
-              combatLog={combatLog}
-              combatPhases={combatPhases}
-              creature1={creature1}
-              creature2={creature2}
-              currentScenario={currentScenario}
-              showingResults={showingResults}
-              currentPhaseIndex={currentPhaseIndex}
-            />
-          </div>
-        )}
-        
-        {/* Combat Speed Control */}
-        <div className="mb-4 p-3 border-t border-gray-200 pt-4">
-          <div className="flex items-center justify-between">
-            <label htmlFor="speed-control" className="font-bold text-gray-700">Combat Speed:</label>
-            <div className="text-sm font-medium text-gray-500">
-              {combatSpeed === 0.5 ? 'Slow' : combatSpeed === 1 ? 'Normal' : combatSpeed === 2 ? 'Fast' : 'Very Fast'}
-            </div>
-          </div>
-          <input 
-            id="speed-control"
-            type="range" 
-            min="0.5" 
-            max="3" 
-            step="0.5" 
-            value={combatSpeed} 
-            onChange={handleSpeedChange}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>Slow</span>
-            <span>Normal</span>
-            <span>Fast</span>
-            <span>Very Fast</span>
-          </div>
-        </div>
-        
-        {/* Combat controls */}
-        <CombatControls 
-          onReturn={returnToSelection}
-          combatComplete={combatComplete}
-        />
       </div>
     </div>
   );

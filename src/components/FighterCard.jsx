@@ -23,17 +23,17 @@ const FighterCard = ({
         <img 
           src={fighter.image} 
           alt={fighter.name} 
-          className="w-full h-auto"
-          style={{ transform: `scale(${size})` }}
+          className="w-full h-auto object-cover"
+          style={{ transform: `scale(${size})`, transformOrigin: 'center' }}
         />
       </div>
       
       {showStats && (
         <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent p-2">
-          <div className="text-white text-center font-bold">
+          <div className="text-white text-center font-bold text-sm sm:text-base">
             {fighter.name}
           </div>
-          <div className="flex justify-center gap-4 text-sm text-white">
+          <div className="flex justify-center gap-4 text-xs sm:text-sm text-white">
             <span>ATK: {fighter.attack}</span>
             <span>DEF: {fighter.defense}</span>
           </div>

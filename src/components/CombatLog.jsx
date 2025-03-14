@@ -188,15 +188,15 @@ const CombatLog = ({
   const phaseKanjis = ['倒', '越', '制', '極'];
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md">
+    <div className="bg-white p-2 sm:p-4 rounded-lg shadow-md w-full">
       <h3 className="text-xl font-bold mb-4">Combat Log</h3>
       
       {/* Vertical layout with kanji on the left and log entries on the right */}
-      <div className="space-y-4">
+      <div className="space-y-2 sm:space-y-4">
         {[0, 1, 2, 3].map(phaseIndex => (
-          <div key={phaseIndex} className="flex items-stretch">
+          <div key={phaseIndex} className="flex items-stretch w-full">
             {/* Kanji indicator */}
-            <div className="w-16 flex-shrink-0 mr-4">
+            <div className="w-12 sm:w-16 flex-shrink-0 mr-2 sm:mr-4">
               <PhaseKanji 
                 kanji={phaseKanjis[phaseIndex]} 
                 description={combatPhases[phaseIndex].description}
@@ -205,7 +205,7 @@ const CombatLog = ({
             </div>
             
             {/* Log entry */}
-            <div className="flex-grow">
+            <div className="flex-grow min-w-0">
               {renderPhaseLog(phaseIndex)}
             </div>
           </div>
