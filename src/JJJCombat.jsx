@@ -487,13 +487,13 @@ const JJJCombat = () => {
   // Render combat screen
   return (
     <div className="w-full min-h-screen bg-gray-100">
-      <div className="w-full p-2 sm:p-4">
-        <h1 className="text-3xl font-bold text-center mb-4 sm:mb-6">JJJ Combat Simulator</h1>
+      <div className="w-full p-1 sm:p-4">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-2 sm:mb-6">JJJ Combat Simulator</h1>
         
         {/* Combat area */}
-        <div className="bg-white p-2 sm:p-6 rounded-lg shadow-md mb-4 sm:mb-6">
+        <div className="bg-white p-1 sm:p-6 rounded-lg shadow-md mb-2 sm:mb-6">
           {/* Fighters */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-8 mb-4 sm:mb-6">
+          <div className="grid grid-cols-2 gap-2 sm:gap-8 mb-2 sm:mb-6">
             {/* Fighter 1 */}
             <div className="text-center">
               <div className="relative">
@@ -502,7 +502,7 @@ const JJJCombat = () => {
                     <img 
                       src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_Crown.png`} 
                       alt="Winner Crown" 
-                      className="w-16 sm:w-24 h-16 sm:h-24"
+                      className="w-12 sm:w-24 h-12 sm:h-24"
                     />
                   </div>
                 )}
@@ -511,18 +511,16 @@ const JJJCombat = () => {
                     <img 
                       src={`${process.env.PUBLIC_URL}/icons/${injuryType === 'broken' ? 'JJJ_Icon_BrokenBone.png' : 'JJJ_Icon_Injury.png'}`} 
                       alt={injuryType === 'broken' ? "Broken Bone" : "Injury"} 
-                      className="w-16 sm:w-24 h-16 sm:h-24"
+                      className="w-12 sm:w-24 h-12 sm:h-24"
                     />
                   </div>
                 )}
-                <div className="relative">
-                  <FighterCard 
-                    fighter={creature1} 
-                    size={1}
-                    isWinner={winner === 1}
-                    showStats={false}
-                  />
-                </div>
+                <FighterCard 
+                  fighter={creature1} 
+                  size={1}
+                  isWinner={winner === 1}
+                  showStats={false}
+                />
                 {!combatComplete && hits.length > 0 && (
                   <div className="mt-2 font-bold text-sm sm:text-base">
                     Hits: {hits[0]}
@@ -531,13 +529,13 @@ const JJJCombat = () => {
               </div>
             </div>
             
-            {/* Draw icon (displayed between fighters when there's a draw) */}
+            {/* Draw icon */}
             {winner === 0 && combatComplete && (
               <div className="absolute left-1/2 top-1/3 transform -translate-x-1/2 -translate-y-1/2 z-10">
                 <img 
                   src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_FistBump.png`} 
                   alt="Draw - Fist Bump" 
-                  className="w-16 sm:w-24 h-16 sm:h-24"
+                  className="w-12 sm:w-24 h-12 sm:h-24"
                 />
               </div>
             )}
@@ -550,7 +548,7 @@ const JJJCombat = () => {
                     <img 
                       src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_Crown.png`} 
                       alt="Winner Crown" 
-                      className="w-16 sm:w-24 h-16 sm:h-24"
+                      className="w-12 sm:w-24 h-12 sm:h-24"
                     />
                   </div>
                 )}
@@ -559,18 +557,16 @@ const JJJCombat = () => {
                     <img 
                       src={`${process.env.PUBLIC_URL}/icons/${injuryType === 'broken' ? 'JJJ_Icon_BrokenBone.png' : 'JJJ_Icon_Injury.png'}`} 
                       alt={injuryType === 'broken' ? "Broken Bone" : "Injury"} 
-                      className="w-16 sm:w-24 h-16 sm:h-24"
+                      className="w-12 sm:w-24 h-12 sm:h-24"
                     />
                   </div>
                 )}
-                <div className="relative">
-                  <FighterCard 
-                    fighter={creature2} 
-                    size={1}
-                    isWinner={winner === 2}
-                    showStats={false}
-                  />
-                </div>
+                <FighterCard 
+                  fighter={creature2} 
+                  size={1}
+                  isWinner={winner === 2}
+                  showStats={false}
+                />
                 {!combatComplete && hits.length > 0 && (
                   <div className="mt-2 font-bold text-sm sm:text-base">
                     Hits: {hits[1]}
@@ -580,8 +576,8 @@ const JJJCombat = () => {
             </div>
           </div>
           
-          {/* Combat gauge - Always visible */}
-          <div className="mb-4">
+          {/* Combat gauge */}
+          <div className="mb-2 sm:mb-4">
             <CombatGauge 
               randomNumbers={randomNumbers}
               probability1={combatLog.length > 0 ? combatLog[combatLog.length - 1].p1 : 0.5}
@@ -592,9 +588,9 @@ const JJJCombat = () => {
             />
           </div>
           
-          {/* Combat log with vertical layout */}
+          {/* Combat log */}
           {combatLog.length > 0 && (
-            <div className="mb-4 w-full">
+            <div className="w-full">
               <CombatLog 
                 combatLog={combatLog}
                 combatPhases={combatPhases}
@@ -608,9 +604,9 @@ const JJJCombat = () => {
           )}
           
           {/* Combat Speed Control */}
-          <div className="mb-4 p-3 border-t border-gray-200 pt-4">
+          <div className="mb-2 sm:mb-4 p-2 sm:p-3 border-t border-gray-200 pt-4">
             <div className="flex items-center justify-between">
-              <label htmlFor="speed-control" className="font-bold text-gray-700">Combat Speed:</label>
+              <label htmlFor="speed-control" className="font-bold text-gray-700">Speed:</label>
               <div className="text-sm font-medium text-gray-500">
                 {combatSpeed === 0.5 ? 'Slow' : combatSpeed === 1 ? 'Normal' : combatSpeed === 2 ? 'Fast' : 'Very Fast'}
               </div>
