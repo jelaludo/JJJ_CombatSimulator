@@ -20,7 +20,7 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
       
       <div className="text-sm">
         {combatLog.map((entry, index) => {
-          // Get the correct phase name for this entry
+          // Get the correct phase name for this entry based on the phase property
           const phaseNames = ["Takedown", "Passing", "Pinning", "Submission"];
           const phaseName = phaseNames[entry.phase];
           
@@ -35,7 +35,7 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
           return (
             <div key={index} className="mb-2 p-2 border-b">
               <div className="font-bold">
-                Phase {index+1}: {combatPhases[index].name} ({combatPhases[index].description})
+                Phase {entry.phase + 1}: {combatPhases[entry.phase].name} ({combatPhases[entry.phase].description})
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -51,6 +51,11 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
                   entry.phaseWinner === 2 ? 
                   `${creature2.name} wins` : 
                   'Draw'}
+                {entry.bonusValue && entry.phaseWinner !== 0 && (
+                  <span className="ml-2 font-semibold text-green-600">
+                    +{entry.bonusValue} bonus for next phase
+                  </span>
+                )}
                 {entry.scenario && (
                   <div className="mt-1 pl-4 border-l-2 border-blue-300">
                     <div className="font-semibold">{phaseName} Phase:</div>

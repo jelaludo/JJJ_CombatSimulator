@@ -18,7 +18,7 @@ const FighterCard = ({
   if (!fighter) return null;
   
   return (
-    <div className={`relative ${isWinner ? 'ring-4 ring-green-500' : ''}`}>
+    <div className={`relative ${isWinner ? 'ring-4 ring-yellow-500' : ''}`}>
       <div className="overflow-hidden rounded-lg">
         <img 
           src={fighter.image} 
@@ -41,8 +41,12 @@ const FighterCard = ({
       )}
       
       {isWinner && (
-        <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-          WINNER
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/3">
+          <img 
+            src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_Crown.png`} 
+            alt="Winner Crown" 
+            className="w-16 h-16"
+          />
         </div>
       )}
     </div>

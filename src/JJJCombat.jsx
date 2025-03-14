@@ -53,26 +53,25 @@ const JJJCombat = () => {
     setCreature2(card);
   };
   
-  // Start combat after card selection
-  const startCombat = () => {
-    setSelectionMode(false);
-    resetCombat();
-  };
-  
-  // Handle combat resolution for a phase
-  const resolveCombatPhase = () => {
-    if (currentPhaseIndex >= combatPhases.length) return;
+  // Resolve combat for a specific phase index (to avoid state update issues)
+  const resolveCombatPhaseForIndex = (phaseIndex) => {
+    if (phaseIndex >= combatPhases.length) return;
     
     setIsAnimating(true);
     
-    // Calculate previous bonuses
-    const prevPhaseBonus = currentPhaseIndex > 0 ? 
-      (combatPhases[currentPhaseIndex-1].bonusWinner === 1 ? 1 : 
-       combatPhases[currentPhaseIndex-1].bonusWinner === 2 ? -1 : 0) : 0;
+    // Calculate previous bonuses - check all previous phases for cumulative effect
+    let prevPhaseBonus = 0;
+    for (let i = 0; i < phaseIndex; i++) {
+      if (combatPhases[i].bonusWinner === 1) {
+        prevPhaseBonus += 0.1; // Add 0.1 for each phase won by fighter 1
+      } else if (combatPhases[i].bonusWinner === 2) {
+        prevPhaseBonus -= 0.1; // Subtract 0.1 for each phase won by fighter 2
+      }
+    }
     
-    // Calculate probabilities
-    const p1 = calculateProbability(creature1, creature2, prevPhaseBonus > 0 ? 1 : 0);
-    const p2 = calculateProbability(creature2, creature1, prevPhaseBonus < 0 ? 1 : 0);
+    // Calculate probabilities with the cumulative bonus
+    const p1 = calculateProbability(creature1, creature2, prevPhaseBonus > 0 ? prevPhaseBonus * 10 : 0);
+    const p2 = calculateProbability(creature2, creature1, prevPhaseBonus < 0 ? Math.abs(prevPhaseBonus) * 10 : 0);
     
     // Generate random numbers
     const rand1 = generateRandomNumbers();
@@ -89,8 +88,12 @@ const JJJCombat = () => {
     
     // Update phase results
     const updatedPhases = [...combatPhases];
-    updatedPhases[currentPhaseIndex].bonusWinner = phaseWinner;
-    updatedPhases[currentPhaseIndex].complete = true;
+    updatedPhases[phaseIndex].bonusWinner = phaseWinner;
+    updatedPhases[phaseIndex].complete = true;
+    
+    // Store the bonus value for display
+    updatedPhases[phaseIndex].bonusValue = 0.1;
+    
     setCombatPhases(updatedPhases);
     
     // Calculate damage (will be applied at the end)
@@ -99,7 +102,7 @@ const JJJCombat = () => {
     
     // Select a scenario based on the current phase and outcome
     const scenario = selectScenario(
-      currentPhaseIndex, 
+      phaseIndex, 
       phaseWinner === 0 ? 'draw' : 'success',
       updatedPhases
     );
@@ -109,12 +112,13 @@ const JJJCombat = () => {
     const newLog = [
       ...combatLog,
       {
-        phase: currentPhaseIndex,
+        phase: phaseIndex,
         p1, p2,
         hits1, hits2,
         phaseWinner,
         damage1, damage2,
-        scenario
+        scenario,
+        bonusValue: 0.1
       }
     ];
     setCombatLog(newLog);
@@ -125,10 +129,37 @@ const JJJCombat = () => {
       setShowingResults(true);
       
       // Check if combat is complete
-      if (currentPhaseIndex === 3) {
+      if (phaseIndex === 3) {
         finalizeCombat(newLog);
+      } else {
+        // Auto-progress to next phase after a delay
+        setTimeout(() => {
+          // Use the explicit nextPhaseIndex to avoid state update issues
+          const nextPhaseIndex = phaseIndex + 1;
+          setCurrentPhaseIndex(nextPhaseIndex);
+          setShowingResults(false);
+          setCurrentScenario(null);
+          
+          // Continue to the next phase
+          setTimeout(() => {
+            if (nextPhaseIndex <= 3 && !combatComplete) {
+              resolveCombatPhaseForIndex(nextPhaseIndex);
+            }
+          }, 1000);
+        }, 3000); // 3 seconds to view the results before moving to next phase
       }
     }, 2000); // 2 seconds of animation
+  };
+  
+  // Start combat after card selection
+  const startCombat = () => {
+    setSelectionMode(false);
+    resetCombat();
+    
+    // Auto-start the first phase after a short delay
+    setTimeout(() => {
+      resolveCombatPhaseForIndex(0);
+    }, 1000);
   };
   
   // Finalize combat and determine winner
@@ -150,21 +181,6 @@ const JJJCombat = () => {
     
     setWinner(overallWinner);
     setCombatComplete(true);
-  };
-  
-  // Move to next phase
-  const nextPhase = () => {
-    if (showingResults) {
-      // Move to next phase
-      if (currentPhaseIndex < combatPhases.length - 1) {
-        setCurrentPhaseIndex(currentPhaseIndex + 1);
-        setShowingResults(false);
-        setCurrentScenario(null);
-      }
-    } else {
-      // Resolve current phase
-      resolveCombatPhase();
-    }
   };
   
   // Reset combat to start a new match
@@ -240,6 +256,8 @@ const JJJCombat = () => {
         <PhaseIndicator 
           phases={combatPhases} 
           currentPhaseIndex={currentPhaseIndex} 
+          fighter1={creature1}
+          fighter2={creature2}
         />
       </div>
       
@@ -313,11 +331,8 @@ const JJJCombat = () => {
         
         {/* Combat controls */}
         <CombatControls 
-          onNextPhase={nextPhase}
           onReset={resetCombat}
           onReturn={returnToSelection}
-          isAnimating={isAnimating}
-          showingResults={showingResults}
           combatComplete={combatComplete}
         />
       </div>

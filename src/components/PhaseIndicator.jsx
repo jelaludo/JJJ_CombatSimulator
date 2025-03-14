@@ -5,9 +5,11 @@ import React from 'react';
  * @param {Object} props - Component props
  * @param {Array} props.phases - Array of phase data
  * @param {number} props.currentPhaseIndex - Index of the current phase
+ * @param {Object} props.fighter1 - Fighter 1 data
+ * @param {Object} props.fighter2 - Fighter 2 data
  * @returns {JSX.Element} - Rendered component
  */
-const PhaseIndicator = ({ phases, currentPhaseIndex }) => {
+const PhaseIndicator = ({ phases, currentPhaseIndex, fighter1, fighter2 }) => {
   return (
     <div className="flex justify-between mb-6">
       {phases.map((phase, index) => (
@@ -38,12 +40,12 @@ const PhaseIndicator = ({ phases, currentPhaseIndex }) => {
           {/* Phase description */}
           <div className="text-xs">{phase.description}</div>
           
-          {/* Winner indicator */}
+          {/* Winner indicator with bonus */}
           {phase.complete && phase.bonusWinner !== 0 && (
             <div className={`text-xs mt-1 ${
               phase.bonusWinner === 1 ? 'text-red-500' : 'text-blue-500'
             }`}>
-              Fighter {phase.bonusWinner} wins
+              {phase.bonusWinner === 1 ? fighter1.name : fighter2.name} Wins! +{phase.bonusValue || 0.1}
             </div>
           )}
         </div>
