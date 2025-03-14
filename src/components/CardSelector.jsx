@@ -49,14 +49,12 @@ const CardSelector = ({ onSelectCard, position, selectedCard }) => {
       >
         {/* Current selected card or placeholder */}
         {selectedCard ? (
-          <div className="relative w-full flex justify-center">
-            <div className="w-1/2">
-              <img 
-                src={selectedCard.image} 
-                alt={selectedCard.name} 
-                className="w-full h-auto rounded-t-lg"
-              />
-            </div>
+          <div className="relative w-full">
+            <img 
+              src={selectedCard.image} 
+              alt={selectedCard.name} 
+              className="w-full h-auto rounded-t-lg"
+            />
             <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent p-2">
               <div className="text-white text-center font-bold text-sm">
                 {selectedCard.name}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CombatGauge from './components/CombatGauge';
 import CardSelector from './components/CardSelector';
 import CombatLog from './components/CombatLog';
@@ -7,20 +7,51 @@ import CombatControls from './components/CombatControls';
 import PhaseIndicator from './components/PhaseIndicator';
 import { calculateProbability, generateRandomNumbers, calculateHits } from './utils/combatUtils';
 import { selectScenario } from './utils/scenarioUtils';
-import { parseCardFromFilename } from './utils/cardService';
+import { parseCardFromFilename, loadCards } from './utils/cardService';
 
 /**
  * Main component for the JJJ Combat Simulator
  * @returns {JSX.Element} - Rendered component
  */
 const JJJCombat = () => {
-  // Default creature cards
+  // Default creature cards (will be replaced with random ones)
   const defaultCreature1 = parseCardFromFilename("Baby Swallow_1_4.png");
   const defaultCreature2 = parseCardFromFilename("POW Tiger_8_7.png");
   
   // Initial creature stats
   const [creature1, setCreature1] = useState(defaultCreature1);
   const [creature2, setCreature2] = useState(defaultCreature2);
+  
+  // Load random fighters on component mount
+  useEffect(() => {
+    const loadRandomFighters = async () => {
+      try {
+        // Load all available cards
+        const allCards = await loadCards();
+        
+        if (allCards.length >= 2) {
+          // Get two random indices
+          let index1 = Math.floor(Math.random() * allCards.length);
+          let index2;
+          
+          // Make sure index2 is different from index1
+          do {
+            index2 = Math.floor(Math.random() * allCards.length);
+          } while (index2 === index1);
+          
+          // Set the random fighters
+          setCreature1(allCards[index1]);
+          setCreature2(allCards[index2]);
+          
+          console.log(`Randomly selected fighters: ${allCards[index1].name} vs ${allCards[index2].name}`);
+        }
+      } catch (error) {
+        console.error("Error loading random fighters:", error);
+      }
+    };
+    
+    loadRandomFighters();
+  }, []); // Empty dependency array means this runs once on component mount
   
   // Combat phases
   const phases = [
@@ -298,52 +329,49 @@ const JJJCombat = () => {
       return;
     }
     
+    // IMPORTANT: If the final phase (Submission) has a clear winner, they win the match
+    // This ensures that a reversal in the final phase determines the winner
+    if (finalPhaseEntry && finalPhaseEntry.phaseWinner !== 0) {
+      setWinner(finalPhaseEntry.phaseWinner);
+      console.log(`Winner determination: Fighter ${finalPhaseEntry.phaseWinner} wins by submission in the final phase!`);
+      setCombatComplete(true);
+      return;
+    }
+    
+    // If we reach here, it means the final phase doesn't have a clear winner
     // Count wins for each fighter (ignoring draws/scrambles)
     const wins1 = currentLog.filter(entry => entry.phaseWinner === 1).length;
     const wins2 = currentLog.filter(entry => entry.phaseWinner === 2).length;
     
-    // Count scrambles
-    const scrambles = currentLog.filter(entry => entry.phaseWinner === 0).length;
-    
     // Determine overall winner
     let overallWinner = 0;
-    if (wins1 > wins2) {
-      overallWinner = 1;
-    } else if (wins2 > wins1) {
-      overallWinner = 2;
-    } else {
-      // If tied in wins, check the final phase
-      if (finalPhaseEntry) {
-        if (finalPhaseEntry.phaseWinner !== 0) {
-          // If final phase has a clear winner, they win the match
-          overallWinner = finalPhaseEntry.phaseWinner;
+    
+    // In case of a tie, check previous phases in reverse order
+    if (wins1 === wins2) {
+      const phase2Entry = currentLog.find(entry => entry.phase === 2);
+      if (phase2Entry && phase2Entry.phaseWinner !== 0) {
+        overallWinner = phase2Entry.phaseWinner;
+      } else {
+        const phase1Entry = currentLog.find(entry => entry.phase === 1);
+        if (phase1Entry && phase1Entry.phaseWinner !== 0) {
+          overallWinner = phase1Entry.phaseWinner;
         } else {
-          // If final phase is a scramble, check the previous phase
-          const phase2Entry = currentLog.find(entry => entry.phase === 2);
-          if (phase2Entry && phase2Entry.phaseWinner !== 0) {
-            overallWinner = phase2Entry.phaseWinner;
+          const phase0Entry = currentLog.find(entry => entry.phase === 0);
+          if (phase0Entry && phase0Entry.phaseWinner !== 0) {
+            overallWinner = phase0Entry.phaseWinner;
           } else {
-            // If still tied, check phase 1
-            const phase1Entry = currentLog.find(entry => entry.phase === 1);
-            if (phase1Entry && phase1Entry.phaseWinner !== 0) {
-              overallWinner = phase1Entry.phaseWinner;
-            } else {
-              // If still tied, check phase 0
-              const phase0Entry = currentLog.find(entry => entry.phase === 0);
-              if (phase0Entry && phase0Entry.phaseWinner !== 0) {
-                overallWinner = phase0Entry.phaseWinner;
-              } else {
-                // If all phases are scrambles or no clear winner, pick randomly
-                overallWinner = Math.random() < 0.5 ? 1 : 2;
-              }
-            }
+            // If all phases are draws, pick randomly
+            overallWinner = Math.random() < 0.5 ? 1 : 2;
           }
         }
-      } else {
-        // Fallback if final phase entry is missing
-        overallWinner = Math.random() < 0.5 ? 1 : 2;
       }
+    } else {
+      // If not tied, the fighter with more wins is the overall winner
+      overallWinner = wins1 > wins2 ? 1 : 2;
     }
+    
+    // Log the winner determination for debugging
+    console.log(`Winner determination: Fighter ${overallWinner} wins (Wins: ${wins1}-${wins2})`);
     
     setWinner(overallWinner);
     setCombatComplete(true);
@@ -477,13 +505,13 @@ const JJJCombat = () => {
         <div className="grid grid-cols-2 gap-8 mb-6">
           {/* Fighter 1 */}
           <div className="text-center">
-            <div className="relative mb-2">
+            <div className="relative">
               {winner === 1 && (
                 <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-full">
                   <img 
                     src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_Crown.png`} 
                     alt="Winner Crown" 
-                    className="w-12 h-12"
+                    className="w-24 h-24"
                   />
                 </div>
               )}
@@ -492,35 +520,45 @@ const JJJCombat = () => {
                   <img 
                     src={`${process.env.PUBLIC_URL}/icons/${injuryType === 'broken' ? 'JJJ_Icon_BrokenBone.png' : 'JJJ_Icon_Injury.png'}`} 
                     alt={injuryType === 'broken' ? "Broken Bone" : "Injury"} 
-                    className="w-12 h-12"
+                    className="w-24 h-24"
                   />
                 </div>
               )}
-              <h2 className="text-lg font-bold">{creature1.name}</h2>
+              <div className="relative">
+                <FighterCard 
+                  fighter={creature1} 
+                  size={1}
+                  isWinner={winner === 1}
+                />
+              </div>
+              {!combatComplete && hits.length > 0 && (
+                <div className="mt-2 font-bold">
+                  Hits: {hits[0]}
+                </div>
+              )}
             </div>
-            <div className="relative">
-              <FighterCard 
-                fighter={creature1} 
-                size={combatComplete ? 1 : 0.5}
-                isWinner={winner === 1}
+          </div>
+          
+          {/* Draw icon (displayed between fighters when there's a draw) */}
+          {winner === 0 && combatComplete && (
+            <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 flex items-center justify-center">
+              <img 
+                src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_FistBump.png`} 
+                alt="Draw - Fist Bump" 
+                style={{ width: '96px', height: 'auto', display: 'block' }}
               />
             </div>
-            {!combatComplete && hits.length > 0 && (
-              <div className="mt-2 font-bold">
-                Hits: {hits[0]}
-              </div>
-            )}
-          </div>
+          )}
           
           {/* Fighter 2 */}
           <div className="text-center">
-            <div className="relative mb-2">
+            <div className="relative">
               {winner === 2 && (
                 <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-full">
                   <img 
                     src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_Crown.png`} 
                     alt="Winner Crown" 
-                    className="w-12 h-12"
+                    className="w-24 h-24"
                   />
                 </div>
               )}
@@ -529,24 +567,23 @@ const JJJCombat = () => {
                   <img 
                     src={`${process.env.PUBLIC_URL}/icons/${injuryType === 'broken' ? 'JJJ_Icon_BrokenBone.png' : 'JJJ_Icon_Injury.png'}`} 
                     alt={injuryType === 'broken' ? "Broken Bone" : "Injury"} 
-                    className="w-12 h-12"
+                    className="w-24 h-24"
                   />
                 </div>
               )}
-              <h2 className="text-lg font-bold">{creature2.name}</h2>
-            </div>
-            <div className="relative">
-              <FighterCard 
-                fighter={creature2} 
-                size={combatComplete ? 1 : 0.5}
-                isWinner={winner === 2}
-              />
-            </div>
-            {!combatComplete && hits.length > 0 && (
-              <div className="mt-2 font-bold">
-                Hits: {hits[1]}
+              <div className="relative">
+                <FighterCard 
+                  fighter={creature2} 
+                  size={1}
+                  isWinner={winner === 2}
+                />
               </div>
-            )}
+              {!combatComplete && hits.length > 0 && (
+                <div className="mt-2 font-bold">
+                  Hits: {hits[1]}
+                </div>
+              )}
+            </div>
           </div>
         </div>
         
@@ -562,67 +599,19 @@ const JJJCombat = () => {
           />
         </div>
         
-        {/* Combined scenario and result display - Always visible with consistent height */}
-        <div className="mb-4 min-h-[150px] flex items-center justify-center">
-          <div className="w-full">
-            {combatComplete ? (
-              <div className="text-center p-6 bg-gray-100 rounded-lg">
-                {winner === 0 ? (
-                  <>
-                    <h2 className="text-2xl font-bold mb-2">
-                      Match Ends in a Draw!
-                    </h2>
-                    <p className="text-gray-600">
-                      Neither fighter was able to secure a submission in the final phase.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="text-2xl font-bold mb-2">
-                      {winner === 1 ? creature1.name : creature2.name} Wins
-                      {currentScenario && ` with a perfect ${currentScenario.name}!`}
-                    </h2>
-                    <p className="text-gray-600">
-                      {winner === 1 ? creature1.name : creature2.name} has emerged victorious after an intense battle!
-                    </p>
-                  </>
-                )}
-                {injuredFighter !== null && (
-                  <p className="mt-2 text-red-600 font-semibold">
-                    {injuredFighter === 1 ? creature1.name : creature2.name} suffered 
-                    {injuryType === 'broken' ? ' a broken bone' : ' an injury'} during the submission!
-                  </p>
-                )}
-              </div>
-            ) : showingResults && currentScenario ? (
-              <div className="bg-gray-100 p-6 rounded-lg shadow-inner">
-                <div className="text-center mb-2">
-                  <span className="inline-block bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                    {currentScenario.name}
-                  </span>
-                </div>
-                <p className="text-center italic">
-                  {currentScenario.description.replace('the opponent', combatPhases[currentPhaseIndex].bonusWinner === 1 ? creature2.name : creature1.name)}
-                </p>
-                <div className="mt-3 text-center font-bold">
-                  {combatPhases[currentPhaseIndex].bonusWinner === 0 ? (
-                    <span className="text-purple-600">
-                      Both fighters are locked in a scramble!
-                    </span>
-                  ) : (
-                    <span className="text-blue-600">
-                      {combatPhases[currentPhaseIndex].bonusWinner === 1 ? creature1.name : creature2.name} executes a perfect {currentScenario.name}!
-                    </span>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center p-6 bg-gray-50 rounded-lg">
-                <p className="text-gray-500">Combat scenarios will appear here during the match</p>
-              </div>
-            )}
+        {/* Combat log - Moved above speed control */}
+        {combatLog.length > 0 && (
+          <div className="mb-4">
+            <CombatLog 
+              combatLog={combatLog}
+              combatPhases={combatPhases}
+              creature1={creature1}
+              creature2={creature2}
+              currentScenario={currentScenario}
+              showingResults={showingResults}
+            />
           </div>
-        </div>
+        )}
         
         {/* Combat Speed Control */}
         <div className="mb-4 p-3 border-t border-gray-200 pt-4">
@@ -657,18 +646,9 @@ const JJJCombat = () => {
           combatComplete={combatComplete}
         />
       </div>
-      
-      {/* Combat log */}
-      {combatLog.length > 0 && (
-        <CombatLog 
-          combatLog={combatLog}
-          combatPhases={combatPhases}
-          creature1={creature1}
-          creature2={creature2}
-        />
-      )}
     </div>
   );
 };
 
 export default JJJCombat;
+
