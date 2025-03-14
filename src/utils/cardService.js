@@ -2,7 +2,10 @@
  * Service for loading and parsing card data from the JJJCombatSimAssets folder
  */
 
-// Function to load all available cards
+/**
+ * Load all available cards from the assets folder
+ * @returns {Promise<Array>} - Array of card objects
+ */
 export const loadCards = async () => {
   try {
     // In a real production app with a backend, we would scan the directory
@@ -30,7 +33,11 @@ export const loadCards = async () => {
   }
 };
 
-// Function to parse card data from a filename
+/**
+ * Parse card data from a filename
+ * @param {string} filename - Filename in the format "Name_Attack_Defense.png"
+ * @returns {Object} - Card object with parsed data
+ */
 export const parseCardFromFilename = (filename) => {
   const imagePath = `${process.env.PUBLIC_URL}/JJJCombatSimAssets/${filename}`;
 

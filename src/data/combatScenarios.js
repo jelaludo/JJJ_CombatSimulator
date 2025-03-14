@@ -1,4 +1,6 @@
-// Combat scenarios organized by phase number for clarity
+/**
+ * Combat scenarios organized by phase number for clarity
+ */
 const combatScenarios = {
   // PHASE 1: TAKEDOWN PHASE
   takedown: {

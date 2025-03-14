@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
-import { Check, X, ArrowRight } from 'lucide-react';
-import CombatGauge from './CombatGauge';
-import ScenarioDisplay from './ScenarioDisplay';
-import CardSelector from './CardSelector';
-import combatScenarios from './combatScenarios';
-import { parseCardFromFilename } from './cardService';
+import CombatGauge from './components/CombatGauge';
+import ScenarioDisplay from './components/ScenarioDisplay';
+import CardSelector from './components/CardSelector';
+import CombatLog from './components/CombatLog';
+import FighterCard from './components/FighterCard';
+import CombatControls from './components/CombatControls';
+import PhaseIndicator from './components/PhaseIndicator';
+import { calculateProbability, generateRandomNumbers, calculateHits } from './utils/combatUtils';
+import { selectScenario } from './utils/scenarioUtils';
+import { parseCardFromFilename } from './utils/cardService';
 
+/**
+ * Main component for the JJJ Combat Simulator
+ * @returns {JSX.Element} - Rendered component
+ */
 const JJJCombat = () => {
   // Default creature cards
   const defaultCreature1 = parseCardFromFilename("Baby Swallow_1_4.png");
@@ -15,6 +23,7 @@ const JJJCombat = () => {
   const [creature1, setCreature1] = useState(defaultCreature1);
   const [creature2, setCreature2] = useState(defaultCreature2);
   
+  // Combat phases
   const phases = [
     { name: "倒", description: "Takedown", bonusWinner: null, complete: false },
     { name: "越", description: "Passing", bonusWinner: null, complete: false },
@@ -22,6 +31,7 @@ const JJJCombat = () => {
     { name: "極", description: "Submission", bonusWinner: null, complete: false }
   ];
   
+  // Combat state
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
   const [combatPhases, setCombatPhases] = useState(phases);
   const [randomNumbers, setRandomNumbers] = useState([]);
@@ -47,111 +57,6 @@ const JJJCombat = () => {
   const startCombat = () => {
     setSelectionMode(false);
     resetCombat();
-  };
-  
-  // Calculate probability of hit
-  const calculateProbability = (attacker, defender, bonus = 0) => {
-    const attackerStrength = attacker.attack + attacker.terrainAttack;
-    const defenderStrength = defender.defense + defender.terrainDefense;
-    const differential = attackerStrength - defenderStrength + bonus;
-    
-    let p = 0.05 * differential + 0.5;
-    p = Math.max(0, Math.min(1, p)); // Clamp between 0 and 1
-    
-    return p;
-  };
-  
-  // Generate random numbers for hit resolution
-  const generateRandomNumbers = () => {
-    const numbers = [];
-    for (let i = 0; i < 6; i++) {
-      numbers.push(Math.random());
-    }
-    return numbers;
-  };
-  
-  // Calculate hits based on probability
-  const calculateHits = (randomNums, probability) => {
-    return randomNums.filter(r => r < probability).length;
-  };
-  
-  // Select a random scenario based on phase and outcome
-  const selectScenario = (phase, outcome) => {
-    let scenarioPool = [];
-    const phaseWinner = combatPhases[phase].bonusWinner;
-    
-    // Determine the scenario pool based on the current phase
-    switch(phase) {
-      case 0: // PHASE 1: Takedown
-        if (phaseWinner !== 0) {
-          scenarioPool = combatScenarios.takedown.success;
-        } else if (outcome === 'draw') {
-          scenarioPool = combatScenarios.takedown.draw;
-        } else {
-          scenarioPool = combatScenarios.takedown.failure;
-        }
-        break;
-        
-      case 1: // PHASE 2: Guard Passing
-        if (phaseWinner !== 0) {
-          scenarioPool = combatScenarios.passing.success;
-        } else if (outcome === 'draw') {
-          scenarioPool = combatScenarios.passing.draw;
-        } else {
-          scenarioPool = combatScenarios.passing.failure;
-        }
-        break;
-        
-      case 2: // PHASE 3: Pinning
-        if (phaseWinner !== 0) {
-          // Check if previous phase winner matches current phase winner
-          const prevPhaseWinner = combatPhases[phase-1].bonusWinner;
-          if (prevPhaseWinner === phaseWinner) {
-            scenarioPool = combatScenarios.pinning.successAfterPass;
-          } else {
-            scenarioPool = combatScenarios.pinning.successAfterFailedPass;
-          }
-        } else if (outcome === 'draw') {
-          scenarioPool = combatScenarios.pinning.draw;
-        } else {
-          scenarioPool = combatScenarios.pinning.failure;
-        }
-        break;
-        
-      case 3: // PHASE 4: Submission
-        if (phaseWinner !== 0) {
-          // Check if previous phase winner matches current phase winner
-          const prevPhaseWinner = combatPhases[phase-1].bonusWinner;
-          if (prevPhaseWinner === phaseWinner) {
-            scenarioPool = combatScenarios.submission.successAfterPin;
-          } else {
-            scenarioPool = combatScenarios.submission.successAfterFailedPin;
-          }
-        } else if (outcome === 'draw') {
-          scenarioPool = combatScenarios.submission.draw;
-        } else {
-          scenarioPool = combatScenarios.submission.failure;
-        }
-        break;
-        
-      default:
-        return null;
-    }
-    
-    // Select a random scenario from the pool
-    if (scenarioPool && scenarioPool.length > 0) {
-      const randomIndex = Math.floor(Math.random() * scenarioPool.length);
-      const selectedScenario = scenarioPool[randomIndex];
-      
-      // Add phase information to help with debugging
-      return {
-        ...selectedScenario,
-        phaseType: ['Takedown', 'Passing', 'Pinning', 'Submission'][phase],
-        phaseIndex: phase
-      };
-    }
-    
-    return null;
   };
   
   // Handle combat resolution for a phase
@@ -193,7 +98,11 @@ const JJJCombat = () => {
     const damage2 = Math.round(hits1 / 6);
     
     // Select a scenario based on the current phase and outcome
-    const scenario = selectScenario(currentPhaseIndex, phaseWinner === 0 ? 'draw' : 'success');
+    const scenario = selectScenario(
+      currentPhaseIndex, 
+      phaseWinner === 0 ? 'draw' : 'success',
+      updatedPhases
+    );
     setCurrentScenario(scenario);
     
     // Update combat log
@@ -222,60 +131,47 @@ const JJJCombat = () => {
     }, 2000); // 2 seconds of animation
   };
   
-  // Apply final combat results
+  // Finalize combat and determine winner
   const finalizeCombat = (log) => {
-    // Count phase wins
-    const creature1Wins = log.filter(entry => entry.phaseWinner === 1).length;
-    const creature2Wins = log.filter(entry => entry.phaseWinner === 2).length;
+    // Count wins for each fighter
+    const wins1 = log.filter(entry => entry.phaseWinner === 1).length;
+    const wins2 = log.filter(entry => entry.phaseWinner === 2).length;
     
-    // Determine winner
-    const finalWinner = creature1Wins > creature2Wins ? 1 : 
-                      creature2Wins > creature1Wins ? 2 : 0;
+    // Determine overall winner
+    let overallWinner = 0;
+    if (wins1 > wins2) {
+      overallWinner = 1;
+    } else if (wins2 > wins1) {
+      overallWinner = 2;
+    } else {
+      // If tied, winner of final phase wins
+      overallWinner = log[log.length - 1].phaseWinner;
+    }
     
-    setWinner(finalWinner);
-    
-    // Calculate total damage
-    const totalDamage1 = log.reduce((sum, entry) => sum + entry.damage1, 0);
-    const totalDamage2 = log.reduce((sum, entry) => sum + entry.damage2, 0);
-    
-    // Apply damage
-    setCreature1(prev => ({
-      ...prev,
-      subunits: Math.max(0, prev.subunits - totalDamage1)
-    }));
-    
-    setCreature2(prev => ({
-      ...prev,
-      subunits: Math.max(0, prev.subunits - totalDamage2)
-    }));
-    
+    setWinner(overallWinner);
     setCombatComplete(true);
   };
   
-  // Move to next phase and automatically resolve it
+  // Move to next phase
   const nextPhase = () => {
-    if (currentPhaseIndex < combatPhases.length - 1) {
-      // Move to the next phase
-      setCurrentPhaseIndex(prev => prev + 1);
-      setShowingResults(false);
-      setCurrentScenario(null);
-      
-      // Use setTimeout to allow the UI to update before resolving the next phase
-      setTimeout(() => {
-        // Automatically resolve the next phase
-        resolveCombatPhase();
-      }, 500);
+    if (showingResults) {
+      // Move to next phase
+      if (currentPhaseIndex < combatPhases.length - 1) {
+        setCurrentPhaseIndex(currentPhaseIndex + 1);
+        setShowingResults(false);
+        setCurrentScenario(null);
+      }
+    } else {
+      // Resolve current phase
+      resolveCombatPhase();
     }
   };
   
-  // Reset combat
+  // Reset combat to start a new match
   const resetCombat = () => {
-    // Reset creature stamina but keep the selected cards
-    setCreature1(prev => ({ ...prev, subunits: 10 }));
-    setCreature2(prev => ({ ...prev, subunits: 10 }));
-    
-    setCombatPhases(phases);
+    // Reset all combat state
     setCurrentPhaseIndex(0);
+    setCombatPhases(phases.map(phase => ({ ...phase, bonusWinner: null, complete: false })));
     setRandomNumbers([]);
     setHits([]);
     setShowingResults(false);
@@ -286,50 +182,49 @@ const JJJCombat = () => {
     setIsAnimating(false);
   };
   
-  // Return to card selection
+  // Return to fighter selection
   const returnToSelection = () => {
     setSelectionMode(true);
+    resetCombat();
   };
   
-  // Render card selection screen
+  // Render fighter selection screen
   if (selectionMode) {
     return (
-      <div className="w-full max-w-4xl mx-auto bg-gray-100 p-4 rounded-lg">
-        <h1 className="text-2xl font-bold text-center mb-6">Jiu Jitsu Jungle Combat</h1>
-        <h2 className="text-xl text-center mb-8">Select Your Fighters</h2>
+      <div className="container mx-auto p-4 max-w-4xl">
+        <h1 className="text-3xl font-bold text-center mb-6">JJJ Combat Simulator</h1>
         
-        <div className="flex justify-between mb-8">
-          <div className="w-1/2 p-4">
-            <h3 className="text-lg font-bold mb-4 text-center">Fighter 1</h3>
-            <div className="flex justify-center">
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-bold mb-4">Select Your Fighters</h2>
+          
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <h3 className="text-lg font-bold mb-2">Fighter 1</h3>
               <CardSelector 
                 onSelectCard={handleSelectCard1} 
-                position="left"
-                selectedCard={creature1}
+                position="left" 
+                selectedCard={creature1} 
+              />
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-bold mb-2">Fighter 2</h3>
+              <CardSelector 
+                onSelectCard={handleSelectCard2} 
+                position="right" 
+                selectedCard={creature2} 
               />
             </div>
           </div>
           
-          <div className="w-1/2 p-4">
-            <h3 className="text-lg font-bold mb-4 text-center">Fighter 2</h3>
-            <div className="flex justify-center">
-              <CardSelector 
-                onSelectCard={handleSelectCard2} 
-                position="right"
-                selectedCard={creature2}
-              />
-            </div>
+          <div className="mt-6 text-center">
+            <button
+              className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-bold transition-colors"
+              onClick={startCombat}
+            >
+              Start Combat
+            </button>
           </div>
-        </div>
-        
-        <div className="text-center mt-8">
-          <button 
-            onClick={startCombat}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-lg"
-            disabled={!creature1 || !creature2}
-          >
-            Start Combat
-          </button>
         </div>
       </div>
     );
@@ -337,312 +232,105 @@ const JJJCombat = () => {
   
   // Render combat screen
   return (
-    <div className="w-full max-w-4xl mx-auto bg-gray-100 p-4 rounded-lg">
-      <h1 className="text-2xl font-bold text-center mb-4">Jiu Jitsu Jungle Combat</h1>
+    <div className="container mx-auto p-4 max-w-4xl">
+      <h1 className="text-3xl font-bold text-center mb-6">JJJ Combat Simulator</h1>
       
-      {/* Creatures display */}
-      <div className="flex justify-between mb-6">
-        <div className="w-1/2 p-2">
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold text-center">{creature1.name}</h2>
-            <div className="flex justify-center">
-              <div className="w-1/2">
-                <img 
-                  src={creature1.image} 
-                  alt={creature1.name} 
-                  className="w-full h-auto rounded-lg" 
-                />
+      {/* Phase indicator */}
+      <div className="relative mb-8">
+        <PhaseIndicator 
+          phases={combatPhases} 
+          currentPhaseIndex={currentPhaseIndex} 
+        />
+      </div>
+      
+      {/* Combat area */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="grid grid-cols-2 gap-8 mb-6">
+          {/* Fighter 1 */}
+          <div className="text-center">
+            <h2 className="text-lg font-bold mb-2">{creature1.name}</h2>
+            <FighterCard 
+              fighter={creature1} 
+              size={combatComplete ? 1 : 0.5}
+              isWinner={winner === 1}
+            />
+            {!combatComplete && hits.length > 0 && (
+              <div className="mt-2 font-bold">
+                Hits: {hits[0]}
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="bg-green-100 p-1 rounded">Attack: {creature1.attack}</div>
-              <div className="bg-blue-100 p-1 rounded">Defense: {creature1.defense}</div>
-              <div className="bg-yellow-100 p-1 rounded">Terrain A: +{creature1.terrainAttack}</div>
-              <div className="bg-purple-100 p-1 rounded">Terrain D: +{creature1.terrainDefense}</div>
-              <div className="bg-red-100 p-1 rounded col-span-2">Stamina: {creature1.subunits}/10</div>
-            </div>
+            )}
+          </div>
+          
+          {/* Fighter 2 */}
+          <div className="text-center">
+            <h2 className="text-lg font-bold mb-2">{creature2.name}</h2>
+            <FighterCard 
+              fighter={creature2} 
+              size={combatComplete ? 1 : 0.5}
+              isWinner={winner === 2}
+            />
+            {!combatComplete && hits.length > 0 && (
+              <div className="mt-2 font-bold">
+                Hits: {hits[1]}
+              </div>
+            )}
           </div>
         </div>
         
-        <div className="w-1/2 p-2">
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold text-center">{creature2.name}</h2>
-            <div className="flex justify-center">
-              <div className="w-1/2">
-                <img 
-                  src={creature2.image} 
-                  alt={creature2.name} 
-                  className="w-full h-auto rounded-lg" 
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="bg-green-100 p-1 rounded">Attack: {creature2.attack}</div>
-              <div className="bg-blue-100 p-1 rounded">Defense: {creature2.defense}</div>
-              <div className="bg-yellow-100 p-1 rounded">Terrain A: +{creature2.terrainAttack}</div>
-              <div className="bg-purple-100 p-1 rounded">Terrain D: +{creature2.terrainDefense}</div>
-              <div className="bg-red-100 p-1 rounded col-span-2">Stamina: {creature2.subunits}/10</div>
-            </div>
+        {/* Combat gauge */}
+        {!combatComplete && (
+          <CombatGauge 
+            randomNumbers={randomNumbers}
+            probability1={combatLog.length > 0 ? combatLog[combatLog.length - 1].p1 : 0.5}
+            probability2={combatLog.length > 0 ? combatLog[combatLog.length - 1].p2 : 0.5}
+            isActive={isAnimating}
+            fighter1Name={creature1.name}
+            fighter2Name={creature2.name}
+          />
+        )}
+        
+        {/* Scenario display */}
+        {showingResults && currentScenario && (
+          <ScenarioDisplay 
+            scenario={currentScenario}
+            fighter1Name={creature1.name}
+            fighter2Name={creature2.name}
+            phaseWinner={combatPhases[currentPhaseIndex].bonusWinner}
+          />
+        )}
+        
+        {/* Combat result */}
+        {combatComplete && (
+          <div className="text-center p-4 bg-gray-100 rounded-lg mb-4">
+            <h2 className="text-2xl font-bold mb-2">
+              {winner === 1 ? creature1.name : creature2.name} Wins!
+            </h2>
+            <p className="text-gray-600">
+              {winner === 1 ? creature1.name : creature2.name} has emerged victorious after an intense battle!
+            </p>
           </div>
-        </div>
+        )}
+        
+        {/* Combat controls */}
+        <CombatControls 
+          onNextPhase={nextPhase}
+          onReset={resetCombat}
+          onReturn={returnToSelection}
+          isAnimating={isAnimating}
+          showingResults={showingResults}
+          combatComplete={combatComplete}
+        />
       </div>
-      
-      {/* Combat progression */}
-      <div className="mb-6">
-        <div className="flex justify-between mb-2">
-          {combatPhases.map((phase, index) => (
-            <div 
-              key={index} 
-              className={`text-center p-2 rounded-lg w-1/4 mx-1 ${
-                currentPhaseIndex === index ? 'bg-yellow-200 font-bold' : 
-                phase.complete ? 'bg-gray-200' : 'bg-gray-100'
-              }`}
-            >
-              <div className="text-xl">{phase.name}</div>
-              <div className="text-sm">{phase.description}</div>
-              {phase.complete && (
-                <div className="mt-1">
-                  {phase.bonusWinner === 1 ? (
-                    <div className="text-green-600 flex items-center justify-center">
-                      <Check size={16} className="mr-1" /> {creature1.name}
-                    </div>
-                  ) : phase.bonusWinner === 2 ? (
-                    <div className="text-green-600 flex items-center justify-center">
-                      <Check size={16} className="mr-1" /> {creature2.name}
-                    </div>
-                  ) : (
-                    <div className="text-gray-600 flex items-center justify-center">
-                      <X size={16} className="mr-1" /> Draw
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      {/* Current phase resolution */}
-      {!combatComplete && (
-        <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-          <h2 className="text-xl font-bold text-center mb-2">
-            Phase: {combatPhases[currentPhaseIndex].name} ({combatPhases[currentPhaseIndex].description})
-          </h2>
-          
-          {/* Combat Gauge */}
-          {(isAnimating || showingResults) && (
-            <CombatGauge 
-              randomNumbers={randomNumbers}
-              probability1={combatLog[currentPhaseIndex]?.p1}
-              probability2={combatLog[currentPhaseIndex]?.p2}
-              isActive={isAnimating || showingResults}
-            />
-          )}
-          
-          {/* Scenario Display */}
-          {showingResults && currentScenario && (
-            <ScenarioDisplay 
-              scenario={currentScenario}
-              fighter1Name={creature1.name}
-              fighter2Name={creature2.name}
-              phaseWinner={combatLog[currentPhaseIndex].phaseWinner}
-            />
-          )}
-          
-          {!showingResults ? (
-            <div className="text-center">
-              <button 
-                onClick={resolveCombatPhase}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                disabled={isAnimating}
-              >
-                {isAnimating ? "Resolving..." : "Resolve Combat"}
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="border p-2 rounded">
-                <h3 className="font-bold text-center">{creature1.name}</h3>
-                <div className="mb-2">
-                  <div className="text-sm">Hit Probability: {(combatLog[currentPhaseIndex].p1 * 100).toFixed(0)}%</div>
-                  <div className="bg-gray-200 rounded-full h-4 overflow-hidden">
-                    <div 
-                      className="bg-blue-500 h-4" 
-                      style={{ width: `${combatLog[currentPhaseIndex].p1 * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-1 mb-2">
-                  {randomNumbers[0] && randomNumbers[0].map((num, i) => (
-                    <div 
-                      key={i} 
-                      className={`p-1 text-center text-sm rounded ${
-                        num < combatLog[currentPhaseIndex].p1 ? 'bg-green-200' : 'bg-red-200'
-                      }`}
-                    >
-                      {num.toFixed(2)}
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="text-center font-bold">
-                  Hits: {hits[0]} / 6
-                </div>
-              </div>
-              
-              <div className="border p-2 rounded">
-                <h3 className="font-bold text-center">{creature2.name}</h3>
-                <div className="mb-2">
-                  <div className="text-sm">Hit Probability: {(combatLog[currentPhaseIndex].p2 * 100).toFixed(0)}%</div>
-                  <div className="bg-gray-200 rounded-full h-4 overflow-hidden">
-                    <div 
-                      className="bg-blue-500 h-4" 
-                      style={{ width: `${combatLog[currentPhaseIndex].p2 * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-1 mb-2">
-                  {randomNumbers[1] && randomNumbers[1].map((num, i) => (
-                    <div 
-                      key={i} 
-                      className={`p-1 text-center text-sm rounded ${
-                        num < combatLog[currentPhaseIndex].p2 ? 'bg-green-200' : 'bg-red-200'
-                      }`}
-                    >
-                      {num.toFixed(2)}
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="text-center font-bold">
-                  Hits: {hits[1]} / 6
-                </div>
-              </div>
-              
-              <div className="col-span-2 text-center mt-2">
-                <div className="font-bold mb-2">
-                  {combatLog[currentPhaseIndex].phaseWinner === 1 ? 
-                    `${creature1.name} wins this phase!` :
-                   combatLog[currentPhaseIndex].phaseWinner === 2 ? 
-                    `${creature2.name} wins this phase!` :
-                    'This phase is a draw!'}
-                </div>
-                
-                {currentPhaseIndex < 3 ? (
-                  <button 
-                    onClick={nextPhase}
-                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center mx-auto"
-                  >
-                    Next Phase <ArrowRight size={16} className="ml-1" />
-                  </button>
-                ) : (
-                  <div className="text-lg font-bold text-purple-700">Combat Complete!</div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {/* Combat results */}
-      {combatComplete && (
-        <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-          <h2 className="text-2xl font-bold text-center mb-4">Combat Results</h2>
-          
-          <div className="text-center text-xl mb-4">
-            {winner === 1 ? 
-              <div className="text-green-600">{creature1.name} is victorious!</div> :
-             winner === 2 ? 
-              <div className="text-green-600">{creature2.name} is victorious!</div> :
-              <div className="text-yellow-600">The match ends in a draw!</div>
-            }
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="text-center">
-              <div className="font-bold">{creature1.name}</div>
-              <div className="text-red-600">
-                Remaining Stamina: {creature1.subunits}/10
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="font-bold">{creature2.name}</div>
-              <div className="text-red-600">
-                Remaining Stamina: {creature2.subunits}/10
-              </div>
-            </div>
-          </div>
-          
-          <div className="text-center flex justify-center space-x-4">
-            <button 
-              onClick={resetCombat}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            >
-              New Combat
-            </button>
-            
-            <button 
-              onClick={returnToSelection}
-              className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Change Fighters
-            </button>
-          </div>
-        </div>
-      )}
       
       {/* Combat log */}
-      <div className="bg-white p-4 rounded-lg shadow-md">
-        <h2 className="text-xl font-bold mb-2">Combat Log</h2>
-        
-        <div className="text-sm">
-          {combatLog.map((entry, index) => {
-            // Get the correct phase name for this entry
-            const phaseNames = ["Takedown", "Passing", "Pinning", "Submission"];
-            const phaseName = phaseNames[entry.phase];
-            
-            // Get the winner name
-            const winnerName = entry.phaseWinner === 1 ? creature1.name : 
-                              entry.phaseWinner === 2 ? creature2.name : "No one";
-            
-            // Get the loser name
-            const loserName = entry.phaseWinner === 1 ? creature2.name : 
-                             entry.phaseWinner === 2 ? creature1.name : "No one";
-            
-            return (
-              <div key={index} className="mb-2 p-2 border-b">
-                <div className="font-bold">
-                  Phase {index+1}: {combatPhases[index].name} ({combatPhases[index].description})
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    {creature1.name}: {entry.hits1} hits (p={entry.p1.toFixed(2)})
-                  </div>
-                  <div>
-                    {creature2.name}: {entry.hits2} hits (p={entry.p2.toFixed(2)})
-                  </div>
-                </div>
-                <div>
-                  Result: {entry.phaseWinner === 1 ? 
-                    `${creature1.name} wins` : 
-                    entry.phaseWinner === 2 ? 
-                    `${creature2.name} wins` : 
-                    'Draw'}
-                  {entry.scenario && (
-                    <div className="mt-1 pl-4 border-l-2 border-blue-300">
-                      <div className="font-semibold">{phaseName} Phase:</div>
-                      <div>{winnerName} executes {entry.scenario.name}: {entry.scenario.description.replace('the opponent', loserName)}</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {combatLog.length > 0 && (
+        <CombatLog 
+          combatLog={combatLog}
+          combatPhases={combatPhases}
+          creature1={creature1}
+          creature2={creature2}
+        />
+      )}
     </div>
   );
 };

@@ -1,5 +1,14 @@
 import React from 'react';
 
+/**
+ * Component to display a combat scenario
+ * @param {Object} props - Component props
+ * @param {Object} props.scenario - The scenario to display
+ * @param {string} props.fighter1Name - Name of fighter 1
+ * @param {string} props.fighter2Name - Name of fighter 2
+ * @param {number} props.phaseWinner - Index of the winning fighter (1 or 2)
+ * @returns {JSX.Element} - Rendered component
+ */
 const ScenarioDisplay = ({ scenario, fighter1Name, fighter2Name, phaseWinner }) => {
   if (!scenario) return null;
   
