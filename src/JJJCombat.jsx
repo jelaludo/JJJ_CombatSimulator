@@ -94,6 +94,9 @@ const JJJCombat = () => {
       return;
     }
 
+    // Set animating state to true when starting a phase
+    setIsAnimating(true);
+
     // Get previous bonus if any
     const previousBonus = phaseIndex > 0 ? combatPhases[phaseIndex - 1].bonusWinner === 1 ? 0.1 : 0 : 0;
 
@@ -223,7 +226,7 @@ const JJJCombat = () => {
             if (nextPhaseIndex <= 3 && !combatComplete) {
               resolveCombatPhaseForIndex(nextPhaseIndex);
             }
-          }, getTimingValue(1000));
+          }, getTimingValue(500)); // Reduced delay to 0.5 seconds to ensure phases progress
         }, getTimingValue(3000)); // 3 seconds to view the results before moving to next phase
       }
     }, getTimingValue(2000)); // 2 seconds of animation
@@ -297,9 +300,20 @@ const JJJCombat = () => {
     setInjuredFighter(null);
     setInjuryType(null);
     
+    // Set a flag to indicate we're starting a new combat
+    const startingNewCombat = true;
+    
     // Auto-start the first phase after a short delay
     setTimeout(() => {
+      // Start with phase 0 and ensure we progress through all phases
       resolveCombatPhaseForIndex(0);
+      
+      // Set up a chain of phase resolutions to ensure all phases are processed
+      if (startingNewCombat) {
+        // We don't need to call the other phases directly here
+        // as resolveCombatPhaseForIndex will handle the progression
+        setIsAnimating(true);
+      }
     }, getTimingValue(1000));
   };
   
@@ -408,6 +422,15 @@ const JJJCombat = () => {
                   />
                 </div>
               )}
+              {injuredFighter === 1 && (
+                <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-full">
+                  <img 
+                    src={`${process.env.PUBLIC_URL}/icons/${injuryType === 'broken' ? 'JJJ_Icon_BrokenBone.png' : 'JJJ_Icon_Injury.png'}`} 
+                    alt={injuryType === 'broken' ? "Broken Bone" : "Injury"} 
+                    className="w-12 h-12"
+                  />
+                </div>
+              )}
               <h2 className="text-lg font-bold">{creature1.name}</h2>
             </div>
             <div className="relative">
@@ -416,15 +439,6 @@ const JJJCombat = () => {
                 size={combatComplete ? 1 : 0.5}
                 isWinner={winner === 1}
               />
-              {injuredFighter === 1 && (
-                <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4">
-                  <img 
-                    src={`${process.env.PUBLIC_URL}/icons/${injuryType === 'broken' ? 'JJJ_Icon_BrokenBone.png' : 'JJJ_Icon_Injury.png'}`} 
-                    alt={injuryType === 'broken' ? "Broken Bone" : "Injury"} 
-                    className="w-10 h-10"
-                  />
-                </div>
-              )}
             </div>
             {!combatComplete && hits.length > 0 && (
               <div className="mt-2 font-bold">
@@ -445,6 +459,15 @@ const JJJCombat = () => {
                   />
                 </div>
               )}
+              {injuredFighter === 2 && (
+                <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-full">
+                  <img 
+                    src={`${process.env.PUBLIC_URL}/icons/${injuryType === 'broken' ? 'JJJ_Icon_BrokenBone.png' : 'JJJ_Icon_Injury.png'}`} 
+                    alt={injuryType === 'broken' ? "Broken Bone" : "Injury"} 
+                    className="w-12 h-12"
+                  />
+                </div>
+              )}
               <h2 className="text-lg font-bold">{creature2.name}</h2>
             </div>
             <div className="relative">
@@ -453,15 +476,6 @@ const JJJCombat = () => {
                 size={combatComplete ? 1 : 0.5}
                 isWinner={winner === 2}
               />
-              {injuredFighter === 2 && (
-                <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4">
-                  <img 
-                    src={`${process.env.PUBLIC_URL}/icons/${injuryType === 'broken' ? 'JJJ_Icon_BrokenBone.png' : 'JJJ_Icon_Injury.png'}`} 
-                    alt={injuryType === 'broken' ? "Broken Bone" : "Injury"} 
-                    className="w-10 h-10"
-                  />
-                </div>
-              )}
             </div>
             {!combatComplete && hits.length > 0 && (
               <div className="mt-2 font-bold">

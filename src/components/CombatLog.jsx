@@ -40,7 +40,16 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
     }
     
     return (
-      <div className="bg-white p-3 rounded-lg border border-gray-200 h-full">
+      <div className="bg-white p-3 rounded-lg border border-gray-200 h-full relative">
+        {/* Decisive Element Badge - Display scenario name in top-right */}
+        {entry.scenario && entry.scenario.name && (
+          <div className="absolute top-2 right-2">
+            <span className="inline-block bg-purple-600 text-white px-2 py-1 rounded-md text-xs font-bold">
+              {entry.scenario.name}
+            </span>
+          </div>
+        )}
+        
         <div className="font-semibold text-md mb-2">
           Phase {entry.phase + 1}: {combatPhases[entry.phase].description}
         </div>
