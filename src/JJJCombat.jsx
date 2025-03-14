@@ -4,7 +4,6 @@ import CardSelector from './components/CardSelector';
 import CombatLog from './components/CombatLog';
 import FighterCard from './components/FighterCard';
 import CombatControls from './components/CombatControls';
-import PhaseIndicator from './components/PhaseIndicator';
 import { calculateProbability, generateRandomNumbers, calculateHits } from './utils/combatUtils';
 import { selectScenario } from './utils/scenarioUtils';
 import { parseCardFromFilename, loadCards } from './utils/cardService';
@@ -419,15 +418,14 @@ const JJJCombat = () => {
   // Render fighter selection screen
   if (selectionMode) {
     return (
-      <div className="container mx-auto p-4 max-w-4xl">
+      <div className="container mx-auto p-4">
         <h1 className="text-3xl font-bold text-center mb-6">JJJ Combat Simulator</h1>
         
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-bold mb-4">Select Your Fighters</h2>
           
-          <div className="grid grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="text-lg font-bold mb-2">Fighter 1</h3>
               <CardSelector 
                 onSelectCard={handleSelectCard1} 
                 position="left" 
@@ -436,7 +434,6 @@ const JJJCombat = () => {
             </div>
             
             <div>
-              <h3 className="text-lg font-bold mb-2">Fighter 2</h3>
               <CardSelector 
                 onSelectCard={handleSelectCard2} 
                 position="right" 
@@ -487,22 +484,13 @@ const JJJCombat = () => {
   
   // Render combat screen
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold text-center mb-6">JJJ Combat Simulator</h1>
       
-      {/* Phase indicator */}
-      <div className="relative mb-8">
-        <PhaseIndicator 
-          phases={combatPhases} 
-          currentPhaseIndex={currentPhaseIndex} 
-          fighter1={creature1}
-          fighter2={creature2}
-        />
-      </div>
-      
       {/* Combat area */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-        <div className="grid grid-cols-2 gap-8 mb-6">
+      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-6">
+        {/* Fighters */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-6">
           {/* Fighter 1 */}
           <div className="text-center">
             <div className="relative">
@@ -529,6 +517,7 @@ const JJJCombat = () => {
                   fighter={creature1} 
                   size={1}
                   isWinner={winner === 1}
+                  showStats={false}
                 />
               </div>
               {!combatComplete && hits.length > 0 && (
@@ -541,7 +530,7 @@ const JJJCombat = () => {
           
           {/* Draw icon (displayed between fighters when there's a draw) */}
           {winner === 0 && combatComplete && (
-            <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 flex items-center justify-center">
+            <div className="absolute left-1/2 top-1/3 transform -translate-x-1/2 -translate-y-1/2 z-10 flex items-center justify-center sm:hidden">
               <img 
                 src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_FistBump.png`} 
                 alt="Draw - Fist Bump" 
@@ -576,6 +565,7 @@ const JJJCombat = () => {
                   fighter={creature2} 
                   size={1}
                   isWinner={winner === 2}
+                  showStats={false}
                 />
               </div>
               {!combatComplete && hits.length > 0 && (
@@ -585,6 +575,17 @@ const JJJCombat = () => {
               )}
             </div>
           </div>
+          
+          {/* Draw icon for desktop (centered between fighters) */}
+          {winner === 0 && combatComplete && (
+            <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 hidden sm:flex items-center justify-center">
+              <img 
+                src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_FistBump.png`} 
+                alt="Draw - Fist Bump" 
+                style={{ width: '96px', height: 'auto', display: 'block' }}
+              />
+            </div>
+          )}
         </div>
         
         {/* Combat gauge - Always visible */}
@@ -599,7 +600,7 @@ const JJJCombat = () => {
           />
         </div>
         
-        {/* Combat log - Moved above speed control */}
+        {/* Combat log with vertical layout */}
         {combatLog.length > 0 && (
           <div className="mb-4">
             <CombatLog 
@@ -609,6 +610,7 @@ const JJJCombat = () => {
               creature2={creature2}
               currentScenario={currentScenario}
               showingResults={showingResults}
+              currentPhaseIndex={currentPhaseIndex}
             />
           </div>
         )}
@@ -641,7 +643,6 @@ const JJJCombat = () => {
         
         {/* Combat controls */}
         <CombatControls 
-          onReset={resetCombat}
           onReturn={returnToSelection}
           combatComplete={combatComplete}
         />

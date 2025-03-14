@@ -1,4 +1,5 @@
 import React from 'react';
+import PhaseKanji from './PhaseKanji';
 
 /**
  * Component to display the combat log
@@ -9,6 +10,7 @@ import React from 'react';
  * @param {Object} props.creature2 - Fighter 2 data
  * @param {Object} props.currentScenario - Current scenario being displayed
  * @param {boolean} props.showingResults - Whether results are being shown
+ * @param {number} props.currentPhaseIndex - Current phase index
  * @returns {JSX.Element} - Rendered component
  */
 const CombatLog = ({ 
@@ -17,7 +19,8 @@ const CombatLog = ({
   creature1, 
   creature2, 
   currentScenario,
-  showingResults
+  showingResults,
+  currentPhaseIndex
 }) => {
   if (!combatLog || combatLog.length === 0) {
     return null;
@@ -128,7 +131,7 @@ const CombatLog = ({
         )}
         
         <div className="font-semibold text-md mb-2">
-          Phase {entry.phase + 1}: {combatPhases[entry.phase].description}
+          Phase {phaseIndex + 1}: {combatPhases[phaseIndex].description}
         </div>
         <div className="text-sm">
           {creature1.name}: {entry.hits1.toFixed(1)} hits
@@ -174,84 +177,39 @@ const CombatLog = ({
     );
   };
 
-  // Check if combat is complete (all phases have entries)
-  const isCombatComplete = [0, 1, 2, 3].every(phaseIndex => phaseEntries[phaseIndex]);
-  
-  // Get the final winner if combat is complete
-  const getFinalWinner = () => {
-    if (!isCombatComplete) return null;
-    
-    // Check if the final phase is a draw
-    const finalPhaseEntry = phaseEntries[3];
-    if (finalPhaseEntry && finalPhaseEntry.phaseWinner === 0) {
-      return 0; // Draw
-    }
-    
-    // IMPORTANT: If the final phase (Submission) has a clear winner, they win the match
-    // This ensures that a reversal in the final phase determines the winner
-    if (finalPhaseEntry && finalPhaseEntry.phaseWinner !== 0) {
-      return finalPhaseEntry.phaseWinner;
-    }
-    
-    // If we reach here, it means the final phase doesn't have a clear winner
-    // Count wins for each fighter
-    const wins1 = sortedLog.filter(entry => entry.phaseWinner === 1).length;
-    const wins2 = sortedLog.filter(entry => entry.phaseWinner === 2).length;
-    
-    // In case of a tie, check previous phases in reverse order
-    if (wins1 === wins2) {
-      const phase2Entry = phaseEntries[2];
-      if (phase2Entry && phase2Entry.phaseWinner !== 0) {
-        return phase2Entry.phaseWinner;
-      } else {
-        const phase1Entry = phaseEntries[1];
-        if (phase1Entry && phase1Entry.phaseWinner !== 0) {
-          return phase1Entry.phaseWinner;
-        } else {
-          const phase0Entry = phaseEntries[0];
-          if (phase0Entry && phase0Entry.phaseWinner !== 0) {
-            return phase0Entry.phaseWinner;
-          }
-        }
-      }
-      // If all phases are draws, return draw
-      return 0;
-    }
-    
-    // If not tied, the fighter with more wins is the overall winner
-    return wins1 > wins2 ? 1 : 2;
+  // Get phase status for kanji display
+  const getPhaseStatus = (phaseIndex) => {
+    if (phaseIndex === currentPhaseIndex) return 'active';
+    if (phaseIndex < currentPhaseIndex || phaseEntries[phaseIndex]) return 'complete';
+    return 'pending';
   };
-  
-  const finalWinner = getFinalWinner();
+
+  // Kanji characters for each phase
+  const phaseKanjis = ['倒', '越', '制', '極'];
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
-      {/* Final result display when combat is complete */}
-      {isCombatComplete && (
-        <div className="mb-4 p-4 bg-gray-100 rounded-lg text-center">
-          {finalWinner === 0 ? (
-            <h3 className="text-xl font-bold text-purple-600">Match Ends in a Draw!</h3>
-          ) : (
-            <h3 className="text-xl font-bold text-green-600">
-              {finalWinner === 1 ? creature1.name : creature2.name} Wins the Match!
-            </h3>
-          )}
-        </div>
-      )}
-      
       <h3 className="text-xl font-bold mb-4">Combat Log</h3>
-      <div className="grid grid-cols-2 gap-4">
-        {/* Phase 1: Takedown */}
-        <div>{renderPhaseLog(0)}</div>
-        
-        {/* Phase 2: Passing */}
-        <div>{renderPhaseLog(1)}</div>
-        
-        {/* Phase 3: Pinning */}
-        <div>{renderPhaseLog(2)}</div>
-        
-        {/* Phase 4: Submission */}
-        <div>{renderPhaseLog(3)}</div>
+      
+      {/* Vertical layout with kanji on the left and log entries on the right */}
+      <div className="space-y-4">
+        {[0, 1, 2, 3].map(phaseIndex => (
+          <div key={phaseIndex} className="flex items-stretch">
+            {/* Kanji indicator */}
+            <div className="w-16 flex-shrink-0 mr-4">
+              <PhaseKanji 
+                kanji={phaseKanjis[phaseIndex]} 
+                description={combatPhases[phaseIndex].description}
+                status={getPhaseStatus(phaseIndex)}
+              />
+            </div>
+            
+            {/* Log entry */}
+            <div className="flex-grow">
+              {renderPhaseLog(phaseIndex)}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
