@@ -26,6 +26,28 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
   sortedLog.forEach(entry => {
     phaseEntries[entry.phase] = entry;
   });
+  
+  // Check if this phase is a reversal or continuation of dominance
+  const getPhaseFlowStatus = (currentPhaseIndex) => {
+    // Phase 0 (first phase) doesn't have a previous phase to compare
+    if (currentPhaseIndex === 0) return null;
+    
+    const currentEntry = phaseEntries[currentPhaseIndex];
+    const previousEntry = phaseEntries[currentPhaseIndex - 1];
+    
+    // If either entry is missing or has no winner, we can't determine
+    if (!currentEntry || !previousEntry || 
+        currentEntry.phaseWinner === 0 || previousEntry.phaseWinner === 0) {
+      return null;
+    }
+    
+    // Compare winners
+    if (currentEntry.phaseWinner !== previousEntry.phaseWinner) {
+      return "REVERSAL!";
+    } else {
+      return "Dominance!";
+    }
+  };
 
   // Render a single phase log
   const renderPhaseLog = (phaseIndex) => {
@@ -39,6 +61,9 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
       );
     }
     
+    // Get the flow status (REVERSAL or Dominance)
+    const flowStatus = getPhaseFlowStatus(phaseIndex);
+    
     return (
       <div className="bg-white p-3 rounded-lg border border-gray-200 h-full relative">
         {/* Decisive Element Badge - Display scenario name in top-right */}
@@ -47,6 +72,12 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
             <span className="inline-block bg-purple-600 text-white px-2 py-1 rounded-md text-xs font-bold">
               {entry.scenario.name}
             </span>
+            {/* Display REVERSAL or Dominance under the technique name for phases 1-3 */}
+            {phaseIndex > 0 && flowStatus && (
+              <div className={`text-center mt-1 text-xs font-bold ${flowStatus === "REVERSAL!" ? "text-red-600" : "text-blue-600"}`}>
+                {flowStatus}
+              </div>
+            )}
           </div>
         )}
         
