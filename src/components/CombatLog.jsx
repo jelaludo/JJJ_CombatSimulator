@@ -1,5 +1,4 @@
-import React from 'react';
-import PhaseKanji from './PhaseKanji';
+import * as React from 'react';
 
 /**
  * Component to display the combat log
