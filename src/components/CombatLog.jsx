@@ -77,59 +77,56 @@ const CombatLog = ({
     const flowStatus = getPhaseFlowStatus(phaseIndex);
     
     return (
-      <div className="bg-white p-2 sm:p-3 rounded-lg border border-gray-200">
-        {/* Phase header with kanji */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">Phase {phaseIndex + 1}: {combatPhases[phaseIndex].description}</span>
-            <span className="text-2xl font-bold">{phaseKanji}</span>
-          </div>
-          {entry.scenario && entry.scenario.name && (
-            <div className="flex flex-col items-end">
-              <span className="bg-purple-600 text-white px-2 py-1 rounded-md text-xs font-bold">
-                {entry.scenario.name}
-              </span>
-              {flowStatus && (
-                <span className={`text-xs font-bold mt-1 ${getFlowStatusColor(flowStatus)}`}>
-                  {flowStatus}
-                </span>
-              )}
-            </div>
-          )}
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        {/* Phase header */}
+        <div className="text-center mb-2">
+          <div className="font-semibold text-lg">Phase {phaseIndex + 1}</div>
+          <div className="text-gray-600">{combatPhases[phaseIndex].description}</div>
         </div>
 
-        {/* Combat results */}
-        <div className="text-sm">
-          {creature1.name}: {entry.hits1.toFixed(1)} hits • {creature2.name}: {entry.hits2.toFixed(1)} hits
-        </div>
-
-        {/* Outcome message */}
-        {entry.phaseWinner !== 0 ? (
-          <div className="mt-2 text-green-600 text-sm">
-            {getWinnerName(entry)} {entry.bonusValue && `(+${entry.bonusValue})`}
-          </div>
-        ) : (
-          <div className="mt-2 text-purple-600 text-sm">
-            Scramble: No clear winner in this phase
-            {entry.hitsDifference && ` (Difference: ${entry.hitsDifference.toFixed(1)})`}
+        {/* Scenario name if exists */}
+        {entry.scenario && entry.scenario.name && (
+          <div className="text-center mb-2">
+            <span className="text-purple-600 font-bold">
+              {entry.scenario.name}
+            </span>
           </div>
         )}
 
+        {/* Large centered kanji */}
+        <div className="text-center my-4">
+          <span className="text-5xl font-bold">{phaseKanji}</span>
+        </div>
+
+        {/* Combat results */}
+        <div className="flex justify-between items-center text-lg">
+          <div className="text-center flex-1">
+            {Math.round(entry.hits1)} Hits
+            {entry.bonusValue && entry.phaseWinner === 1 && (
+              <span className="text-blue-600 ml-1">+{entry.bonusValue}</span>
+            )}
+          </div>
+          <div className="text-center flex-1">
+            {Math.round(entry.hits2)} Hits
+            {entry.bonusValue && entry.phaseWinner === 2 && (
+              <span className="text-blue-600 ml-1">+{entry.bonusValue}</span>
+            )}
+          </div>
+        </div>
+
         {/* Scenario description */}
         {entry.scenario && entry.scenario.description && (
-          <div className="mt-2 text-green-500 text-sm italic">
+          <div className="mt-4 text-center text-green-500 text-sm italic">
             "{entry.scenario.description}"
           </div>
         )}
 
-        {/* Injury information */}
-        {entry.isInjured && (
-          <div className="mt-2 text-red-600 text-sm">
-            {entry.injuredFighter === 1 ? creature1.name : creature2.name} suffered 
-            {entry.injuryType === 'broken' ? ' a broken bone' : ' an injury'}!
-            <div className="text-xs">
-              (Chance: {(entry.injuryChance * 100).toFixed(1)}%)
-            </div>
+        {/* Flow status */}
+        {flowStatus && (
+          <div className="mt-2 text-center">
+            <span className={`text-purple-600 font-bold`}>
+              {flowStatus}
+            </span>
           </div>
         )}
       </div>
@@ -139,7 +136,7 @@ const CombatLog = ({
   return (
     <div className="w-full">
       <h3 className="text-xl font-bold mb-2 px-2">Combat Log</h3>
-      <div className="space-y-2">
+      <div className="space-y-4">
         {[0, 1, 2, 3].map(phaseIndex => (
           <div key={phaseIndex} className="px-1">
             {renderPhaseLog(phaseIndex)}
