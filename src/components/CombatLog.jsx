@@ -14,58 +14,46 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
     return null;
   }
   
+  // Sort the combat log by phase to ensure they're displayed in order
+  const sortedLog = [...combatLog].sort((a, b) => a.phase - b.phase);
+  
+  const getWinnerName = (entry) => {
+    return entry.phaseWinner === 1 ? creature1.name : creature2.name;
+  };
+
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-2">Combat Log</h2>
-      
-      <div className="text-sm">
-        {combatLog.map((entry, index) => {
-          // Get the correct phase name for this entry based on the phase property
-          const phaseNames = ["Takedown", "Passing", "Pinning", "Submission"];
-          const phaseName = phaseNames[entry.phase];
-          
-          // Get the winner name
-          const winnerName = entry.phaseWinner === 1 ? creature1.name : 
-                            entry.phaseWinner === 2 ? creature2.name : "No one";
-          
-          // Get the loser name
-          const loserName = entry.phaseWinner === 1 ? creature2.name : 
-                           entry.phaseWinner === 2 ? creature1.name : "No one";
-          
-          return (
-            <div key={index} className="mb-2 p-2 border-b">
-              <div className="font-bold">
-                Phase {entry.phase + 1}: {combatPhases[entry.phase].name} ({combatPhases[entry.phase].description})
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  {creature1.name}: {entry.hits1} hits (p={entry.p1.toFixed(2)})
-                </div>
-                <div>
-                  {creature2.name}: {entry.hits2} hits (p={entry.p2.toFixed(2)})
-                </div>
-              </div>
-              <div>
-                Result: {entry.phaseWinner === 1 ? 
-                  `${creature1.name} wins` : 
-                  entry.phaseWinner === 2 ? 
-                  `${creature2.name} wins` : 
-                  'Draw'}
-                {entry.bonusValue && entry.phaseWinner !== 0 && (
-                  <span className="ml-2 font-semibold text-green-600">
-                    +{entry.bonusValue} bonus for next phase
-                  </span>
-                )}
-                {entry.scenario && (
-                  <div className="mt-1 pl-4 border-l-2 border-blue-300">
-                    <div className="font-semibold">{phaseName} Phase:</div>
-                    <div>{winnerName} executes {entry.scenario.name}: {entry.scenario.description.replace('the opponent', loserName)}</div>
-                  </div>
-                )}
-              </div>
+      <h3 className="text-xl font-bold mb-4">Combat Log</h3>
+      <div className="space-y-4">
+        {sortedLog.map((entry, index) => (
+          <div key={index} className="border-b pb-2 last:border-b-0">
+            <div className="font-semibold text-lg mb-2">
+              Phase {entry.phase + 1}: {combatPhases[entry.phase].description}
             </div>
-          );
-        })}
+            <div>
+              {creature1.name}: {entry.hits1.toFixed(1)} hits
+            </div>
+            <div>
+              {creature2.name}: {entry.hits2.toFixed(1)} hits
+            </div>
+            <div className="mt-2 text-green-600">
+              {getWinnerName(entry)} wins this phase!
+              {entry.bonusValue && (
+                <span className="text-blue-500 ml-2">
+                  (+{entry.bonusValue} bonus for next phase)
+                </span>
+              )}
+            </div>
+            {entry.isInjured && (
+              <div className="mt-2 text-red-600">
+                {entry.injuredFighter === 1 ? creature1.name : creature2.name} was injured!
+                <div className="text-sm">
+                  (Injury chance was {(entry.injuryChance * 100).toFixed(1)}%)
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

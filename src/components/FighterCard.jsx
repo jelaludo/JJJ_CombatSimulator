@@ -39,16 +39,6 @@ const FighterCard = ({
           </div>
         </div>
       )}
-      
-      {isWinner && (
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/3">
-          <img 
-            src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_Crown.png`} 
-            alt="Winner Crown" 
-            className="w-16 h-16"
-          />
-        </div>
-      )}
     </div>
   );
 };
