@@ -114,13 +114,41 @@ const JJJCombat = () => {
     const hits2 = calculateHits(rand2, p2);
     setHits([hits1, hits2]);
     
+    // Define scramble thresholds for each phase
+    const scrambleThresholds = [
+      1.2, // Phase 0 (Takedown): 1.2 hits difference
+      1.0, // Phase 1 (Passing): 1.0 hits difference
+      0.8, // Phase 2 (Pinning): 0.8 hits difference
+      0.6  // Phase 3 (Submission): 0.6 hits difference
+    ];
+    
+    // Calculate the difference in hits
+    const hitsDifference = Math.abs(hits1 - hits2);
+    
+    // Determine if this is a scramble based on the threshold for this phase
+    const threshold = scrambleThresholds[phaseIndex];
+    let isScramble = false;
+    
+    if (hitsDifference < threshold) {
+      // Calculate scramble probability: 80% - (difference in hits × 50%)
+      const scrambleProbability = 0.8 - (hitsDifference * 0.5);
+      // Random check to see if it's a scramble
+      isScramble = Math.random() < scrambleProbability;
+    }
+    
     // Determine phase winner
-    const phaseWinner = hits1 > hits2 ? 1 : hits2 > hits1 ? 2 : 0;
+    let phaseWinner;
+    if (isScramble) {
+      phaseWinner = 0; // Draw/Scramble
+    } else {
+      phaseWinner = hits1 > hits2 ? 1 : hits2 > hits1 ? 2 : 0;
+    }
     
     // Update phase results
     const updatedPhases = [...combatPhases];
     updatedPhases[phaseIndex].bonusWinner = phaseWinner;
     updatedPhases[phaseIndex].complete = true;
+    updatedPhases[phaseIndex].isScramble = isScramble;
     
     // Store the bonus value for display
     updatedPhases[phaseIndex].bonusValue = 0.1;
@@ -182,7 +210,9 @@ const JJJCombat = () => {
         calculateInjuryChance(
           phaseWinner === 1 ? p1 : p2, 
           updatedPhases.filter((phase, idx) => idx < 3 && phase.bonusWinner === phaseWinner).length
-        ) : null
+        ) : null,
+      isScramble: isScramble,
+      hitsDifference: hitsDifference
     };
     
     // Add this phase's log entry to the combat log, preserving all previous entries
@@ -259,9 +289,21 @@ const JJJCombat = () => {
       !combatLog.some(existingEntry => existingEntry.phase === entry.phase)
     )];
     
-    // Count wins for each fighter
+    // Check if the final phase (Submission) is a draw/scramble
+    const finalPhaseEntry = currentLog.find(entry => entry.phase === 3);
+    if (finalPhaseEntry && finalPhaseEntry.phaseWinner === 0) {
+      // If the final phase is a draw/scramble, the match is a draw
+      setWinner(0); // 0 indicates a draw
+      setCombatComplete(true);
+      return;
+    }
+    
+    // Count wins for each fighter (ignoring draws/scrambles)
     const wins1 = currentLog.filter(entry => entry.phaseWinner === 1).length;
     const wins2 = currentLog.filter(entry => entry.phaseWinner === 2).length;
+    
+    // Count scrambles
+    const scrambles = currentLog.filter(entry => entry.phaseWinner === 0).length;
     
     // Determine overall winner
     let overallWinner = 0;
@@ -270,12 +312,35 @@ const JJJCombat = () => {
     } else if (wins2 > wins1) {
       overallWinner = 2;
     } else {
-      // If tied, winner of final phase wins
-      const finalPhaseEntry = currentLog.find(entry => entry.phase === 3);
-      if (finalPhaseEntry && finalPhaseEntry.phaseWinner) {
-        overallWinner = finalPhaseEntry.phaseWinner;
+      // If tied in wins, check the final phase
+      if (finalPhaseEntry) {
+        if (finalPhaseEntry.phaseWinner !== 0) {
+          // If final phase has a clear winner, they win the match
+          overallWinner = finalPhaseEntry.phaseWinner;
+        } else {
+          // If final phase is a scramble, check the previous phase
+          const phase2Entry = currentLog.find(entry => entry.phase === 2);
+          if (phase2Entry && phase2Entry.phaseWinner !== 0) {
+            overallWinner = phase2Entry.phaseWinner;
+          } else {
+            // If still tied, check phase 1
+            const phase1Entry = currentLog.find(entry => entry.phase === 1);
+            if (phase1Entry && phase1Entry.phaseWinner !== 0) {
+              overallWinner = phase1Entry.phaseWinner;
+            } else {
+              // If still tied, check phase 0
+              const phase0Entry = currentLog.find(entry => entry.phase === 0);
+              if (phase0Entry && phase0Entry.phaseWinner !== 0) {
+                overallWinner = phase0Entry.phaseWinner;
+              } else {
+                // If all phases are scrambles or no clear winner, pick randomly
+                overallWinner = Math.random() < 0.5 ? 1 : 2;
+              }
+            }
+          }
+        }
       } else {
-        // Fallback if final phase entry is missing or has no winner
+        // Fallback if final phase entry is missing
         overallWinner = Math.random() < 0.5 ? 1 : 2;
       }
     }
@@ -502,13 +567,26 @@ const JJJCombat = () => {
           <div className="w-full">
             {combatComplete ? (
               <div className="text-center p-6 bg-gray-100 rounded-lg">
-                <h2 className="text-2xl font-bold mb-2">
-                  {winner === 1 ? creature1.name : creature2.name} Wins
-                  {currentScenario && ` with a perfect ${currentScenario.name}!`}
-                </h2>
-                <p className="text-gray-600">
-                  {winner === 1 ? creature1.name : creature2.name} has emerged victorious after an intense battle!
-                </p>
+                {winner === 0 ? (
+                  <>
+                    <h2 className="text-2xl font-bold mb-2">
+                      Match Ends in a Draw!
+                    </h2>
+                    <p className="text-gray-600">
+                      Neither fighter was able to secure a submission in the final phase.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-2xl font-bold mb-2">
+                      {winner === 1 ? creature1.name : creature2.name} Wins
+                      {currentScenario && ` with a perfect ${currentScenario.name}!`}
+                    </h2>
+                    <p className="text-gray-600">
+                      {winner === 1 ? creature1.name : creature2.name} has emerged victorious after an intense battle!
+                    </p>
+                  </>
+                )}
                 {injuredFighter !== null && (
                   <p className="mt-2 text-red-600 font-semibold">
                     {injuredFighter === 1 ? creature1.name : creature2.name} suffered 
@@ -527,9 +605,15 @@ const JJJCombat = () => {
                   {currentScenario.description.replace('the opponent', combatPhases[currentPhaseIndex].bonusWinner === 1 ? creature2.name : creature1.name)}
                 </p>
                 <div className="mt-3 text-center font-bold">
-                  <span className="text-blue-600">
-                    {combatPhases[currentPhaseIndex].bonusWinner === 1 ? creature1.name : creature2.name} executes a perfect {currentScenario.name}!
-                  </span>
+                  {combatPhases[currentPhaseIndex].bonusWinner === 0 ? (
+                    <span className="text-purple-600">
+                      Both fighters are locked in a scramble!
+                    </span>
+                  ) : (
+                    <span className="text-blue-600">
+                      {combatPhases[currentPhaseIndex].bonusWinner === 1 ? creature1.name : creature2.name} executes a perfect {currentScenario.name}!
+                    </span>
+                  )}
                 </div>
               </div>
             ) : (
