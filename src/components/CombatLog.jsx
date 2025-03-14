@@ -27,17 +27,22 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
     phaseEntries[entry.phase] = entry;
   });
   
-  // Check if this phase is a reversal or continuation of dominance
+  // Check if this phase is a reversal, continuation of dominance, or a scramble
   const getPhaseFlowStatus = (currentPhaseIndex) => {
+    const currentEntry = phaseEntries[currentPhaseIndex];
+    
+    // If the current entry is a scramble/draw, return "Scramble!"
+    if (currentEntry && currentEntry.phaseWinner === 0) {
+      return "Scramble!";
+    }
+    
     // Phase 0 (first phase) doesn't have a previous phase to compare
     if (currentPhaseIndex === 0) return null;
     
-    const currentEntry = phaseEntries[currentPhaseIndex];
     const previousEntry = phaseEntries[currentPhaseIndex - 1];
     
-    // If either entry is missing or has no winner, we can't determine
-    if (!currentEntry || !previousEntry || 
-        currentEntry.phaseWinner === 0 || previousEntry.phaseWinner === 0) {
+    // If either entry is missing or previous has no winner, we can't determine
+    if (!currentEntry || !previousEntry || previousEntry.phaseWinner === 0) {
       return null;
     }
     
@@ -61,8 +66,16 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
       );
     }
     
-    // Get the flow status (REVERSAL or Dominance)
+    // Get the flow status (REVERSAL, Dominance, or Scramble)
     const flowStatus = getPhaseFlowStatus(phaseIndex);
+    
+    // Determine the color for the flow status
+    const getFlowStatusColor = (status) => {
+      if (status === "REVERSAL!") return "text-red-600";
+      if (status === "Dominance!") return "text-blue-600";
+      if (status === "Scramble!") return "text-purple-600";
+      return "";
+    };
     
     return (
       <div className="bg-white p-3 rounded-lg border border-gray-200 h-full relative">
@@ -72,9 +85,9 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
             <span className="inline-block bg-purple-600 text-white px-2 py-1 rounded-md text-xs font-bold">
               {entry.scenario.name}
             </span>
-            {/* Display REVERSAL or Dominance under the technique name for phases 1-3 */}
-            {phaseIndex > 0 && flowStatus && (
-              <div className={`text-center mt-1 text-xs font-bold ${flowStatus === "REVERSAL!" ? "text-red-600" : "text-blue-600"}`}>
+            {/* Display flow status under the technique name */}
+            {flowStatus && (
+              <div className={`text-center mt-1 text-xs font-bold ${getFlowStatusColor(flowStatus)}`}>
                 {flowStatus}
               </div>
             )}
@@ -90,14 +103,25 @@ const CombatLog = ({ combatLog, combatPhases, creature1, creature2 }) => {
         <div className="text-sm">
           {creature2.name}: {entry.hits2.toFixed(1)} hits
         </div>
-        <div className="mt-2 text-green-600 text-sm">
-          {getWinnerName(entry)} wins this phase!
-          {entry.bonusValue && (
-            <span className="text-blue-500 ml-2">
-              (+{entry.bonusValue})
-            </span>
-          )}
-        </div>
+        {entry.phaseWinner !== 0 ? (
+          <div className="mt-2 text-green-600 text-sm">
+            {getWinnerName(entry)} wins this phase!
+            {entry.bonusValue && (
+              <span className="text-blue-500 ml-2">
+                (+{entry.bonusValue})
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="mt-2 text-purple-600 text-sm">
+            Scramble! No clear winner in this phase.
+            {entry.hitsDifference && (
+              <span className="text-gray-500 ml-2">
+                (Difference: {entry.hitsDifference.toFixed(1)})
+              </span>
+            )}
+          </div>
+        )}
         {entry.isInjured && (
           <div className="mt-2 text-red-600 text-sm">
             {entry.injuredFighter === 1 ? creature1.name : creature2.name} was injured!
