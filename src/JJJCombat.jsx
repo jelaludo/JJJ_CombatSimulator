@@ -432,27 +432,33 @@ const JJJCombat = () => {
           </div>
         </div>
         
-        {/* Combat gauge */}
-        {!combatComplete && (
+        {/* Combat gauge - Always visible */}
+        <div className="mb-4">
           <CombatGauge 
             randomNumbers={randomNumbers}
             probability1={combatLog.length > 0 ? combatLog[combatLog.length - 1].p1 : 0.5}
             probability2={combatLog.length > 0 ? combatLog[combatLog.length - 1].p2 : 0.5}
-            isActive={isAnimating}
+            isActive={isAnimating && !combatComplete}
             fighter1Name={creature1.name}
             fighter2Name={creature2.name}
           />
-        )}
+        </div>
         
-        {/* Scenario display */}
-        {showingResults && currentScenario && (
-          <ScenarioDisplay 
-            scenario={currentScenario}
-            fighter1Name={creature1.name}
-            fighter2Name={creature2.name}
-            phaseWinner={combatPhases[currentPhaseIndex].bonusWinner}
-          />
-        )}
+        {/* Scenario display - Always visible */}
+        <div className="mb-4 min-h-[100px]">
+          {showingResults && currentScenario ? (
+            <ScenarioDisplay 
+              scenario={currentScenario}
+              fighter1Name={creature1.name}
+              fighter2Name={creature2.name}
+              phaseWinner={combatPhases[currentPhaseIndex].bonusWinner}
+            />
+          ) : (
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <p className="text-gray-500">Combat scenarios will appear here during the match</p>
+            </div>
+          )}
+        </div>
         
         {/* Combat result */}
         {combatComplete && (
