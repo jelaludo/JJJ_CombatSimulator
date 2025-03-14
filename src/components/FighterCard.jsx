@@ -18,7 +18,7 @@ const FighterCard = ({
   if (!fighter) return null;
   
   return (
-    <div className={`relative ${isWinner ? 'ring-4 ring-yellow-500' : ''}`}>
+    <div className={`relative ${isWinner ? 'ring-8 ring-yellow-500 rounded-xl' : ''}`}>
       <div className="overflow-hidden rounded-lg">
         <img 
           src={fighter.image} 
