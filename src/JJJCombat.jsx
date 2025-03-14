@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import CombatGauge from './components/CombatGauge';
-import ScenarioDisplay from './components/ScenarioDisplay';
 import CardSelector from './components/CardSelector';
 import CombatLog from './components/CombatLog';
 import FighterCard from './components/FighterCard';
@@ -164,28 +163,32 @@ const JJJCombat = () => {
       }
     }
     
-    // Update combat log
-    const newLog = [
-      ...combatLog,
-      {
-        phase: phaseIndex,
-        p1, p2,
-        hits1, hits2,
-        phaseWinner,
-        damage1, damage2,
-        scenario,
-        bonusValue: 0.1,
-        isInjured,
-        injuredFighter: injuredFighterNumber,
-        injuryType: currentInjuryType,
-        injuryChance: phaseIndex === 3 && phaseWinner !== 0 ? 
-          calculateInjuryChance(
-            phaseWinner === 1 ? p1 : p2, 
-            updatedPhases.filter((phase, idx) => idx < 3 && phase.bonusWinner === phaseWinner).length
-          ) : null
-      }
-    ];
-    setCombatLog(newLog);
+    // Create a new log entry for this phase
+    const newEntry = {
+      phase: phaseIndex,
+      p1, p2,
+      hits1, hits2,
+      phaseWinner,
+      damage1, damage2,
+      scenario,
+      bonusValue: 0.1,
+      isInjured,
+      injuredFighter: injuredFighterNumber,
+      injuryType: currentInjuryType,
+      injuryChance: phaseIndex === 3 && phaseWinner !== 0 ? 
+        calculateInjuryChance(
+          phaseWinner === 1 ? p1 : p2, 
+          updatedPhases.filter((phase, idx) => idx < 3 && phase.bonusWinner === phaseWinner).length
+        ) : null
+    };
+    
+    // Add this phase's log entry to the combat log, preserving all previous entries
+    setCombatLog(prevLog => {
+      // Remove any existing entry for this phase
+      const filteredLog = prevLog.filter(entry => entry.phase !== phaseIndex);
+      // Add the new entry and sort by phase
+      return [...filteredLog, newEntry].sort((a, b) => a.phase - b.phase);
+    });
     
     // Simulate animation time
     setTimeout(() => {
@@ -194,7 +197,7 @@ const JJJCombat = () => {
       
       // Check if combat is complete
       if (phaseIndex === 3) {
-        finalizeCombat(newLog);
+        finalizeCombat(combatLog);
       } else {
         // Auto-progress to next phase after a delay
         setTimeout(() => {
@@ -219,11 +222,6 @@ const JJJCombat = () => {
   const startCombat = () => {
     setSelectionMode(false);
     resetCombat();
-    
-    // Auto-start the first phase after a short delay
-    setTimeout(() => {
-      resolveCombatPhaseForIndex(0);
-    }, getTimingValue(1000));
   };
   
   // Finalize combat and determine winner
@@ -262,6 +260,11 @@ const JJJCombat = () => {
     setIsAnimating(false);
     setInjuredFighter(null);
     setInjuryType(null);
+    
+    // Auto-start the first phase after a short delay
+    setTimeout(() => {
+      resolveCombatPhaseForIndex(0);
+    }, getTimingValue(1000));
   };
   
   // Return to fighter selection
@@ -444,39 +447,48 @@ const JJJCombat = () => {
           />
         </div>
         
-        {/* Scenario display - Always visible */}
-        <div className="mb-4 min-h-[100px]">
-          {showingResults && currentScenario ? (
-            <ScenarioDisplay 
-              scenario={currentScenario}
-              fighter1Name={creature1.name}
-              fighter2Name={creature2.name}
-              phaseWinner={combatPhases[currentPhaseIndex].bonusWinner}
-            />
-          ) : (
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">Combat scenarios will appear here during the match</p>
-            </div>
-          )}
-        </div>
-        
-        {/* Combat result */}
-        {combatComplete && (
-          <div className="text-center p-4 bg-gray-100 rounded-lg mb-4">
-            <h2 className="text-2xl font-bold mb-2">
-              {winner === 1 ? creature1.name : creature2.name} Wins!
-            </h2>
-            <p className="text-gray-600">
-              {winner === 1 ? creature1.name : creature2.name} has emerged victorious after an intense battle!
-            </p>
-            {injuredFighter !== null && (
-              <p className="mt-2 text-red-600 font-semibold">
-                {injuredFighter === 1 ? creature1.name : creature2.name} suffered 
-                {injuryType === 'broken' ? ' a broken bone' : ' an injury'} during the submission!
-              </p>
+        {/* Combined scenario and result display - Always visible with consistent height */}
+        <div className="mb-4 min-h-[150px] flex items-center justify-center">
+          <div className="w-full">
+            {combatComplete ? (
+              <div className="text-center p-6 bg-gray-100 rounded-lg">
+                <h2 className="text-2xl font-bold mb-2">
+                  {winner === 1 ? creature1.name : creature2.name} Wins
+                  {currentScenario && ` with a perfect ${currentScenario.name}!`}
+                </h2>
+                <p className="text-gray-600">
+                  {winner === 1 ? creature1.name : creature2.name} has emerged victorious after an intense battle!
+                </p>
+                {injuredFighter !== null && (
+                  <p className="mt-2 text-red-600 font-semibold">
+                    {injuredFighter === 1 ? creature1.name : creature2.name} suffered 
+                    {injuryType === 'broken' ? ' a broken bone' : ' an injury'} during the submission!
+                  </p>
+                )}
+              </div>
+            ) : showingResults && currentScenario ? (
+              <div className="bg-gray-100 p-6 rounded-lg shadow-inner">
+                <div className="text-center mb-2">
+                  <span className="inline-block bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                    {currentScenario.name}
+                  </span>
+                </div>
+                <p className="text-center italic">
+                  {currentScenario.description.replace('the opponent', combatPhases[currentPhaseIndex].bonusWinner === 1 ? creature2.name : creature1.name)}
+                </p>
+                <div className="mt-3 text-center font-bold">
+                  <span className="text-blue-600">
+                    {combatPhases[currentPhaseIndex].bonusWinner === 1 ? creature1.name : creature2.name} executes a perfect {currentScenario.name}!
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center p-6 bg-gray-50 rounded-lg">
+                <p className="text-gray-500">Combat scenarios will appear here during the match</p>
+              </div>
             )}
           </div>
-        )}
+        </div>
         
         {/* Combat Speed Control */}
         <div className="mb-4 p-3 border-t border-gray-200 pt-4">
