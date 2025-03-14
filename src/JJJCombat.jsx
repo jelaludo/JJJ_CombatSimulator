@@ -187,7 +187,17 @@ const JJJCombat = () => {
       // Remove any existing entry for this phase
       const filteredLog = prevLog.filter(entry => entry.phase !== phaseIndex);
       // Add the new entry and sort by phase
-      return [...filteredLog, newEntry].sort((a, b) => a.phase - b.phase);
+      const updatedLog = [...filteredLog, newEntry].sort((a, b) => a.phase - b.phase);
+      
+      // If this is the final phase, finalize combat with the updated log
+      if (phaseIndex === 3) {
+        // Use setTimeout to ensure state is updated before finalizing
+        setTimeout(() => {
+          finalizeCombat(updatedLog);
+        }, 100);
+      }
+      
+      return updatedLog;
     });
     
     // Simulate animation time
@@ -197,7 +207,8 @@ const JJJCombat = () => {
       
       // Check if combat is complete
       if (phaseIndex === 3) {
-        finalizeCombat(combatLog);
+        // Combat is finalized in the setCombatLog callback above
+        setCombatComplete(true);
       } else {
         // Auto-progress to next phase after a delay
         setTimeout(() => {
@@ -226,9 +237,28 @@ const JJJCombat = () => {
   
   // Finalize combat and determine winner
   const finalizeCombat = (log) => {
+    // Ensure we have a valid log with entries
+    if (!log || log.length === 0) {
+      console.warn("Combat log is empty when finalizing combat");
+      // Default to the current phase winner if available
+      if (combatPhases[3].bonusWinner) {
+        setWinner(combatPhases[3].bonusWinner);
+      } else {
+        // Fallback to a random winner if all else fails
+        setWinner(Math.random() < 0.5 ? 1 : 2);
+      }
+      setCombatComplete(true);
+      return;
+    }
+    
+    // Get the most up-to-date log from state
+    const currentLog = [...combatLog, ...log.filter(entry => 
+      !combatLog.some(existingEntry => existingEntry.phase === entry.phase)
+    )];
+    
     // Count wins for each fighter
-    const wins1 = log.filter(entry => entry.phaseWinner === 1).length;
-    const wins2 = log.filter(entry => entry.phaseWinner === 2).length;
+    const wins1 = currentLog.filter(entry => entry.phaseWinner === 1).length;
+    const wins2 = currentLog.filter(entry => entry.phaseWinner === 2).length;
     
     // Determine overall winner
     let overallWinner = 0;
@@ -238,7 +268,13 @@ const JJJCombat = () => {
       overallWinner = 2;
     } else {
       // If tied, winner of final phase wins
-      overallWinner = log[log.length - 1].phaseWinner;
+      const finalPhaseEntry = currentLog.find(entry => entry.phase === 3);
+      if (finalPhaseEntry && finalPhaseEntry.phaseWinner) {
+        overallWinner = finalPhaseEntry.phaseWinner;
+      } else {
+        // Fallback if final phase entry is missing or has no winner
+        overallWinner = Math.random() < 0.5 ? 1 : 2;
+      }
     }
     
     setWinner(overallWinner);
