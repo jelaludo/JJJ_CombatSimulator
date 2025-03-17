@@ -52,3 +52,16 @@ Each creature has different stats (attack, defense, terrain bonuses) that affect
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details. 
+
+Git Basics:
+git status
+git add .
+git commit -m "msg"
+git push
+git log
+git show <commit_hash>:<path>
+(compare)  git diff <has1><hash2>
+
+new commit with older version
+git checkout <commit_hash> -- <path_to_file>
+git commit -m "Restored file to previous version"

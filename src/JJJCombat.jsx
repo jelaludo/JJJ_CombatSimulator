@@ -4,6 +4,7 @@ import CardSelector from './components/CardSelector';
 import CombatLog from './components/CombatLog';
 import FighterCard from './components/FighterCard';
 import CombatControls from './components/CombatControls';
+import ExplosionAnimation from './components/ExplosionAnimation';
 import { calculateProbability, generateRandomNumbers, calculateHits } from './utils/combatUtils';
 import { selectScenario } from './utils/scenarioUtils';
 import { parseCardFromFilename, loadCards } from './utils/cardService';
@@ -539,6 +540,13 @@ const JJJCombat = () => {
                 />
               </div>
             )}
+            
+            {/* Explosion Animation */}
+            <ExplosionAnimation 
+              isActive={isAnimating && !combatComplete} 
+              fps={8} 
+              currentPhaseIndex={currentPhaseIndex}
+            />
             
             {/* Fighter 2 */}
             <div className="text-center">

@@ -79,14 +79,14 @@ const CombatLog = ({
       <div className="bg-white p-4 rounded-lg border border-gray-200">
         {/* Phase header */}
         <div className="text-center mb-2">
-          <div className="font-semibold text-lg">Phase {phaseIndex + 1}</div>
-          <div className="text-gray-600">{combatPhases[phaseIndex].description}</div>
+          <div className="font-semibold text-lg sm:text-xl">Phase {phaseIndex + 1}</div>
+          <div className="text-gray-600 text-base sm:text-lg">{combatPhases[phaseIndex].description}</div>
         </div>
 
         {/* Scenario name if exists */}
         {entry.scenario && entry.scenario.name && (
           <div className="text-center mb-2">
-            <span className="text-purple-600 font-bold">
+            <span className="text-purple-600 font-bold text-base sm:text-lg">
               {entry.scenario.name}
             </span>
           </div>
@@ -94,11 +94,11 @@ const CombatLog = ({
 
         {/* Large centered kanji */}
         <div className="text-center my-4">
-          <span className="text-5xl font-bold">{phaseKanji}</span>
+          <span className="text-5xl sm:text-6xl font-bold">{phaseKanji}</span>
         </div>
 
         {/* Combat results */}
-        <div className="flex justify-between items-center text-lg">
+        <div className="flex justify-between items-center text-lg sm:text-xl">
           <div className="text-center flex-1">
             {Math.round(entry.hits1)} Hits
             {entry.bonusValue && entry.phaseWinner === 1 && (
@@ -115,7 +115,7 @@ const CombatLog = ({
 
         {/* Scenario description */}
         {entry.scenario && entry.scenario.description && (
-          <div className="mt-4 text-center text-green-500 text-sm italic">
+          <div className="mt-4 text-center text-green-500 text-sm sm:text-base italic">
             "{entry.scenario.description}"
           </div>
         )}
@@ -123,7 +123,7 @@ const CombatLog = ({
         {/* Flow status */}
         {flowStatus && (
           <div className="mt-2 text-center">
-            <span className={`text-purple-600 font-bold`}>
+            <span className="text-purple-600 font-bold text-base sm:text-lg">
               {flowStatus}
             </span>
           </div>
@@ -134,7 +134,7 @@ const CombatLog = ({
 
   return (
     <div className="w-full">
-      <h3 className="text-xl font-bold mb-2 px-2">Combat Log</h3>
+      <h3 className="text-xl sm:text-2xl font-bold mb-2 px-2">Combat Log</h3>
       <div className="space-y-4">
         {[0, 1, 2, 3].map(phaseIndex => (
           <div key={phaseIndex} className="px-1">
