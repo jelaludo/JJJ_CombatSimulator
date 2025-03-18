@@ -47,23 +47,8 @@ const ExplosionAnimation = ({ isActive, fps = 8, currentPhaseIndex = 0 }) => {
   // Format the frame number with leading zeros
   const frameNumber = String(currentFrame + 1).padStart(2, '0');
   
-  // Calculate vertical position based on current phase
-  // Phase 0 (Takedown): Top of the screen
-  // Phase 1 (Passing): 1/3 down
-  // Phase 2 (Pinning): 2/3 down
-  // Phase 3 (Submission): Bottom of the screen
-  const getVerticalPosition = () => {
-    switch(currentPhaseIndex) {
-      case 0: return "top-1/4";
-      case 1: return "top-2/5";
-      case 2: return "top-3/5";
-      case 3: return "top-3/4";
-      default: return "top-1/2";
-    }
-  };
-  
   return (
-    <div className={`fixed inset-x-0 ${getVerticalPosition()} flex justify-center z-20 pointer-events-none`}>
+    <div className="pointer-events-none">
       <img 
         src={`/animations/Explosion Large/spr_explosion_large_${frameNumber}.png`}
         alt={`Explosion frame ${currentFrame + 1}`}

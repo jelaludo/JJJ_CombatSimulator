@@ -526,7 +526,7 @@ const JJJCombat = () => {
         {/* Combat area */}
         <div className="bg-white p-1 sm:p-6 rounded-lg shadow-md mb-2 sm:mb-6">
           {/* Fighters */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-8 mb-2 sm:mb-6">
+          <div className="grid grid-cols-2 gap-2 sm:gap-8 mb-2 sm:mb-6 relative">
             {/* Fighter 1 */}
             <div className="text-center">
               <div className="relative">
@@ -562,37 +562,42 @@ const JJJCombat = () => {
               </div>
             </div>
             
-            {/* Draw icon */}
-            {winner === 0 && combatComplete && (
-              <div className="absolute left-1/2 top-1/3 transform -translate-x-1/2 -translate-y-1/2 z-10">
+            {/* Animation Container - positioned in the middle */}
+            <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+              {/* Draw icon */}
+              {winner === 0 && combatComplete && (
                 <img 
                   src={`${process.env.PUBLIC_URL}/icons/JJJ_Icon_FistBump.png`} 
                   alt="Draw - Fist Bump" 
                   className="w-12 sm:w-24 h-12 sm:h-24"
                 />
-              </div>
-            )}
-            
-            {/* Animation based on selection */}
-            {selectedAnimation === "explosion" ? (
-              <ExplosionAnimation 
-                isActive={isAnimating && !combatComplete} 
-                fps={8} 
-                currentPhaseIndex={currentPhaseIndex}
-              />
-            ) : selectedAnimation === "comic" ? (
-              <SpriteSheetAnimation 
-                isActive={isAnimating && !combatComplete} 
-                fps={8} 
-                currentPhaseIndex={currentPhaseIndex}
-              />
-            ) : (
-              <SequenceAnimation 
-                isActive={isAnimating && !combatComplete} 
-                fps={8} 
-                currentPhaseIndex={currentPhaseIndex}
-              />
-            )}
+              )}
+              
+              {/* Animation based on selection */}
+              {selectedAnimation === "explosion" && isAnimating && !combatComplete && (
+                <ExplosionAnimation 
+                  isActive={true} 
+                  fps={8} 
+                  currentPhaseIndex={currentPhaseIndex}
+                />
+              )}
+              
+              {selectedAnimation === "comic" && isAnimating && !combatComplete && (
+                <SpriteSheetAnimation 
+                  isActive={true} 
+                  fps={8} 
+                  currentPhaseIndex={currentPhaseIndex}
+                />
+              )}
+              
+              {selectedAnimation === "sequence" && isAnimating && !combatComplete && (
+                <SequenceAnimation 
+                  isActive={true} 
+                  fps={8} 
+                  currentPhaseIndex={currentPhaseIndex}
+                />
+              )}
+            </div>
             
             {/* Fighter 2 */}
             <div className="text-center">

@@ -61,7 +61,7 @@ const SequenceAnimation = ({ isActive, fps = 8, currentPhaseIndex = 0 }) => {
   };
   
   return (
-    <div className={`fixed inset-x-0 ${getVerticalPosition()} flex justify-center z-20 pointer-events-none`}>
+    <div className="pointer-events-none">
       <div className="w-64 h-64 sm:w-96 sm:h-96 relative">
         {/* Fallback colored animation if image doesn't load */}
         {!imageLoaded && (
