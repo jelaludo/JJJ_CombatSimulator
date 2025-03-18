@@ -5,9 +5,12 @@ import CombatLog from './components/CombatLog';
 import FighterCard from './components/FighterCard';
 import CombatControls from './components/CombatControls';
 import ExplosionAnimation from './components/ExplosionAnimation';
+import SpriteSheetAnimation from './components/SpriteSheetAnimation';
+import SequenceAnimation from './components/SequenceAnimation';
 import { calculateProbability, generateRandomNumbers, calculateHits } from './utils/combatUtils';
 import { selectScenario } from './utils/scenarioUtils';
 import { parseCardFromFilename, loadCards } from './utils/cardService';
+import { getAllAnimations } from './utils/animationService';
 
 /**
  * Main component for the JJJ Combat Simulator
@@ -76,6 +79,10 @@ const JJJCombat = () => {
   const [combatSpeed, setCombatSpeed] = useState(1); // 1 = normal speed, 2 = 2x speed, 0.5 = half speed
   const [injuredFighter, setInjuredFighter] = useState(null); // null, 1, or 2
   const [injuryType, setInjuryType] = useState(null); // null, 'injury', or 'broken'
+  
+  // Animation selection
+  const [selectedAnimation, setSelectedAnimation] = useState("explosion");
+  const availableAnimations = getAllAnimations();
   
   // Handle card selection
   const handleSelectCard1 = (card) => {
@@ -416,6 +423,11 @@ const JJJCombat = () => {
     resetCombat();
   };
   
+  // Handle animation selection change
+  const handleAnimationChange = (e) => {
+    setSelectedAnimation(e.target.value);
+  };
+  
   // Render fighter selection screen
   if (selectionMode) {
     return (
@@ -441,6 +453,26 @@ const JJJCombat = () => {
                   position="right" 
                   selectedCard={creature2} 
                 />
+              </div>
+            </div>
+            
+            {/* Animation Selection */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <h3 className="text-lg font-bold mb-2">Animation Style</h3>
+              <div className="flex items-center space-x-2">
+                <label htmlFor="animation-select" className="font-bold text-gray-700">Style:</label>
+                <select 
+                  id="animation-select"
+                  value={selectedAnimation} 
+                  onChange={handleAnimationChange}
+                  className="p-2 border border-gray-300 rounded-md"
+                >
+                  {availableAnimations.map(animation => (
+                    <option key={animation.id} value={animation.id}>
+                      {animation.name} ({animation.id === 'explosion' ? '24 frames' : animation.id === 'comic' ? '4 frames' : '12 frames'})
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             
@@ -541,12 +573,26 @@ const JJJCombat = () => {
               </div>
             )}
             
-            {/* Explosion Animation */}
-            <ExplosionAnimation 
-              isActive={isAnimating && !combatComplete} 
-              fps={8} 
-              currentPhaseIndex={currentPhaseIndex}
-            />
+            {/* Animation based on selection */}
+            {selectedAnimation === "explosion" ? (
+              <ExplosionAnimation 
+                isActive={isAnimating && !combatComplete} 
+                fps={8} 
+                currentPhaseIndex={currentPhaseIndex}
+              />
+            ) : selectedAnimation === "comic" ? (
+              <SpriteSheetAnimation 
+                isActive={isAnimating && !combatComplete} 
+                fps={8} 
+                currentPhaseIndex={currentPhaseIndex}
+              />
+            ) : (
+              <SequenceAnimation 
+                isActive={isAnimating && !combatComplete} 
+                fps={8} 
+                currentPhaseIndex={currentPhaseIndex}
+              />
+            )}
             
             {/* Fighter 2 */}
             <div className="text-center">
@@ -642,6 +688,25 @@ const JJJCombat = () => {
             onReturn={returnToSelection}
             combatComplete={combatComplete}
           />
+          
+          {/* Animation Selection */}
+          <div className="mt-4 p-2 sm:p-3 border-t border-gray-200 pt-2">
+            <div className="flex items-center space-x-2">
+              <label htmlFor="animation-select-combat" className="font-bold text-gray-700">Animation:</label>
+              <select 
+                id="animation-select-combat"
+                value={selectedAnimation} 
+                onChange={handleAnimationChange}
+                className="p-1 border border-gray-300 rounded-md text-sm"
+              >
+                {availableAnimations.map(animation => (
+                  <option key={animation.id} value={animation.id}>
+                    {animation.name} ({animation.id === 'explosion' ? '24 frames' : animation.id === 'comic' ? '4 frames' : '12 frames'})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
       </div>
     </div>
