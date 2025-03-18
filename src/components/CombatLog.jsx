@@ -25,27 +25,21 @@ const CombatLog = ({
     return null;
   }
   
-  const sortedLog = [...combatLog].sort((a, b) => a.phase - b.phase);
-  
-  const getWinnerName = (entry) => {
-    return entry.phaseWinner === 1 ? creature1.name : creature2.name;
-  };
-
   const phaseEntries = {};
-  sortedLog.forEach(entry => {
+  combatLog.forEach(entry => {
     phaseEntries[entry.phase] = entry;
   });
   
-  const getPhaseFlowStatus = (currentPhaseIndex) => {
-    const currentEntry = phaseEntries[currentPhaseIndex];
+  const getPhaseFlowStatus = (phaseIndex) => {
+    const currentEntry = phaseEntries[phaseIndex];
     
     if (currentEntry && currentEntry.phaseWinner === 0) {
       return "Scramble!";
     }
     
-    if (currentPhaseIndex === 0) return null;
+    if (phaseIndex === 0) return null;
     
-    const previousEntry = phaseEntries[currentPhaseIndex - 1];
+    const previousEntry = phaseEntries[phaseIndex - 1];
     
     if (!currentEntry || !previousEntry || previousEntry.phaseWinner === 0) {
       return null;
@@ -59,6 +53,43 @@ const CombatLog = ({
     if (status === "Dominance!") return "text-blue-600";
     if (status === "Scramble!") return "text-purple-600";
     return "";
+  };
+
+  // Get winner name based on phase winner
+  const getWinnerName = (entry) => {
+    if (!entry || entry.phaseWinner === 0) return null;
+    return entry.phaseWinner === 1 ? creature1.name : creature2.name;
+  };
+
+  // Render technique and winner information
+  const renderTechniqueInfo = (entry, phaseIndex) => {
+    if (!entry) return null;
+    
+    // If it's a scramble, don't display any technique
+    if (entry.phaseWinner === 0) return null;
+    
+    const winnerName = getWinnerName(entry);
+    const techniqueName = entry.scenario && entry.scenario.name ? entry.scenario.name : "Technique";
+    
+    // For the final phase (submission), display the winner announcement
+    if (phaseIndex === 3) {
+      return (
+        <div className="text-center mb-2">
+          <span className="text-purple-600 font-bold text-base sm:text-lg">
+            {winnerName} Winner! by {techniqueName}
+          </span>
+        </div>
+      );
+    }
+    
+    // For other phases, display technique by winner name
+    return (
+      <div className="text-center mb-2">
+        <span className="text-purple-600 font-bold text-base sm:text-lg">
+          {techniqueName} by {winnerName}
+        </span>
+      </div>
+    );
   };
 
   const renderPhaseLog = (phaseIndex) => {
@@ -83,14 +114,8 @@ const CombatLog = ({
           <div className="text-gray-600 text-base sm:text-lg">{combatPhases[phaseIndex].description}</div>
         </div>
 
-        {/* Scenario name if exists */}
-        {entry.scenario && entry.scenario.name && (
-          <div className="text-center mb-2">
-            <span className="text-purple-600 font-bold text-base sm:text-lg">
-              {entry.scenario.name}
-            </span>
-          </div>
-        )}
+        {/* Technique and winner info */}
+        {renderTechniqueInfo(entry, phaseIndex)}
 
         {/* Large centered kanji */}
         <div className="text-center my-4">
@@ -100,13 +125,13 @@ const CombatLog = ({
         {/* Combat results */}
         <div className="flex justify-between items-center text-lg sm:text-xl">
           <div className="text-center flex-1">
-            {Math.round(entry.hits1)} Hits
+            {Math.floor(entry.hits1)} Hits
             {entry.bonusValue && entry.phaseWinner === 1 && (
               <span className="text-blue-600 ml-1">+{entry.bonusValue}</span>
             )}
           </div>
           <div className="text-center flex-1">
-            {Math.round(entry.hits2)} Hits
+            {Math.floor(entry.hits2)} Hits
             {entry.bonusValue && entry.phaseWinner === 2 && (
               <span className="text-blue-600 ml-1">+{entry.bonusValue}</span>
             )}
@@ -120,8 +145,8 @@ const CombatLog = ({
           </div>
         )}
 
-        {/* Flow status */}
-        {flowStatus && (
+        {/* Flow status - moved below the technique name */}
+        {flowStatus && entry.phaseWinner === 0 && (
           <div className="mt-2 text-center">
             <span className="text-purple-600 font-bold text-base sm:text-lg">
               {flowStatus}
@@ -132,11 +157,27 @@ const CombatLog = ({
     );
   };
 
+  // Create an array of phases to display in order
+  // Current phase first, then previous phases in reverse order
+  const getOrderedPhaseIndices = () => {
+    const ordered = [];
+    
+    // Add current phase first
+    ordered.push(currentPhaseIndex);
+    
+    // Add previous phases in reverse order
+    for (let i = currentPhaseIndex - 1; i >= 0; i--) {
+      ordered.push(i);
+    }
+    
+    return ordered;
+  };
+
   return (
     <div className="w-full">
       <h3 className="text-xl sm:text-2xl font-bold mb-2 px-2">Combat Log</h3>
       <div className="space-y-4">
-        {[0, 1, 2, 3].map(phaseIndex => (
+        {getOrderedPhaseIndices().map(phaseIndex => (
           <div key={phaseIndex} className="px-1">
             {renderPhaseLog(phaseIndex)}
           </div>

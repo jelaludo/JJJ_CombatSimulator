@@ -79,9 +79,11 @@ const JJJCombat = () => {
   const [combatSpeed, setCombatSpeed] = useState(1); // 1 = normal speed, 2 = 2x speed, 0.5 = half speed
   const [injuredFighter, setInjuredFighter] = useState(null); // null, 1, or 2
   const [injuryType, setInjuryType] = useState(null); // null, 'injury', or 'broken'
+  const [showWinnerAnimation, setShowWinnerAnimation] = useState(false); // For winner crown animation
+  const [winningTechnique, setWinningTechnique] = useState(""); // Store the winning technique name
   
   // Animation selection
-  const [selectedAnimation, setSelectedAnimation] = useState("explosion");
+  const [selectedAnimation, setSelectedAnimation] = useState("sequence");
   const availableAnimations = getAllAnimations();
   
   // Handle card selection
@@ -273,13 +275,53 @@ const JJJCombat = () => {
     
     // Simulate animation time
     setTimeout(() => {
-      setIsAnimating(false);
+      // Only set animating to false when not in the final phase
+      // This allows the final animation to play out completely
+      if (phaseIndex < 3) {
+        setIsAnimating(false);
+      }
       setShowingResults(true);
       
       // Check if combat is complete
       if (phaseIndex === 3) {
-        // Combat is finalized in the setCombatLog callback above
-        setCombatComplete(true);
+        // For the final phase, allow animation to complete fully before marking combat as complete
+        // Calculate the total animation duration based on the selected animation type and fps
+        const selectedAnimConfig = availableAnimations.find(anim => anim.id === selectedAnimation);
+        const frameCount = selectedAnimation === 'explosion' ? 24 : 
+                          selectedAnimation === 'comic' ? 4 : 
+                          selectedAnimation === 'sequence' ? 12 : 12;
+        const fps = 8;
+        // Calculate full animation duration plus buffer time
+        const animationDuration = (frameCount / fps) * 1000 + 1500; // Add 1.5s buffer
+        
+        // Set a timeout that matches the full animation duration
+        setTimeout(() => {
+          setIsAnimating(false);
+          setCombatComplete(true);
+          
+          // If there's a winner and it's the final phase, show the winner animation
+          // and set the winning technique from the scenario name
+          if (phaseWinner !== 0) {
+            const winnerName = phaseWinner === 1 ? creature1.name : creature2.name;
+            // Extract technique name from the scenario if available
+            let technique = "";
+            if (scenario && scenario.name) {
+              technique = scenario.name;
+            } else {
+              technique = "Submission";
+            }
+            setWinningTechnique(technique);
+            
+            // Show the winner animation after a short delay
+            setTimeout(() => {
+              setShowWinnerAnimation(true);
+              // Hide it after 3 seconds
+              setTimeout(() => {
+                setShowWinnerAnimation(false);
+              }, 3000);
+            }, 500);
+          }
+        }, animationDuration);
       } else {
         // Auto-progress to next phase after a delay
         setTimeout(() => {
@@ -399,6 +441,8 @@ const JJJCombat = () => {
     setIsAnimating(false);
     setInjuredFighter(null);
     setInjuryType(null);
+    setShowWinnerAnimation(false);
+    setWinningTechnique("");
     
     // Set a flag to indicate we're starting a new combat
     const startingNewCombat = true;
@@ -469,7 +513,7 @@ const JJJCombat = () => {
                 >
                   {availableAnimations.map(animation => (
                     <option key={animation.id} value={animation.id}>
-                      {animation.name} ({animation.id === 'explosion' ? '24 frames' : animation.id === 'comic' ? '4 frames' : '12 frames'})
+                      {animation.name} ({animation.id === 'sequence' ? '12 frames' : animation.id === 'explosion' ? 'TEST - 24 frames' : 'TEST - 4 frames'})
                     </option>
                   ))}
                 </select>
@@ -537,6 +581,15 @@ const JJJCombat = () => {
                       alt="Winner Crown" 
                       className="w-12 sm:w-24 h-12 sm:h-24"
                     />
+                    {showWinnerAnimation && winner === 1 && (
+                      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/4 scale-50">
+                        <ExplosionAnimation 
+                          isActive={true} 
+                          fps={12} 
+                          currentPhaseIndex={3}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
                 {injuredFighter === 1 && (
@@ -609,6 +662,15 @@ const JJJCombat = () => {
                       alt="Winner Crown" 
                       className="w-12 sm:w-24 h-12 sm:h-24"
                     />
+                    {showWinnerAnimation && winner === 2 && (
+                      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/4 scale-50">
+                        <ExplosionAnimation 
+                          isActive={true} 
+                          fps={12} 
+                          currentPhaseIndex={3}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
                 {injuredFighter === 2 && (
@@ -706,7 +768,7 @@ const JJJCombat = () => {
               >
                 {availableAnimations.map(animation => (
                   <option key={animation.id} value={animation.id}>
-                    {animation.name} ({animation.id === 'explosion' ? '24 frames' : animation.id === 'comic' ? '4 frames' : '12 frames'})
+                    {animation.name} ({animation.id === 'sequence' ? '12 frames' : animation.id === 'explosion' ? 'TEST - 24 frames' : 'TEST - 4 frames'})
                   </option>
                 ))}
               </select>

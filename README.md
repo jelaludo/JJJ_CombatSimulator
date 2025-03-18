@@ -65,3 +65,15 @@ git show <commit_hash>:<path>
 new commit with older version
 git checkout <commit_hash> -- <path_to_file>
 git commit -m "Restored file to previous version"
+
+## Assets
+JJJ Characters by Jelaludo 
+Smoke animation by www.freepik.com
+Explosion animation by gamemaker.io/en/bundles  Space Rocks HD
+
+##Tools
+Vibe Coding with Cursor and Claude Sonnet 3.7  www.cursor.com/settings
+Gamemaker.io
+github.com
+www.scenario.com
+Vercel  https://vercel.com/jelaludos-projects/jjj-combat-simulator/deployments

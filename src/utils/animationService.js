@@ -3,7 +3,7 @@
  */
 const animations = {
   explosion: {
-    name: "Large Explosion",
+    name: "TEST - Large Explosion",
     description: "A detailed 24-frame explosion animation",
     type: "sequence",
     frameCount: 24,
@@ -13,7 +13,7 @@ const animations = {
     fileNumberFormat: "padStart", // 01, 02, 03, etc.
   },
   comic: {
-    name: "Colored Comic",
+    name: "TEST - Colored Comic",
     description: "A 4-frame comic style explosion from a sprite sheet",
     type: "spritesheet",
     frameCount: 4,
@@ -45,7 +45,7 @@ const animations = {
  * @returns {Object} - Animation configuration
  */
 export const getAnimation = (animationId) => {
-  return animations[animationId] || animations.explosion;
+  return animations[animationId] || animations.sequence;
 };
 
 /**
